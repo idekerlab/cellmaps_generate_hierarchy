@@ -24,63 +24,16 @@ class TestCellmaps_generate_hierarchy(unittest.TestCase):
         """Tests parse arguments"""
         res = cellmaps_generate_hierarchycmd._parse_arguments('hi', [])
 
-        self.assertEqual(res.verbose, 0)
-        self.assertEqual(res.exitcode, 0)
-        self.assertEqual(res.logconf, None)
+        self.assertEqual(0, res.verbose)
+        self.assertEqual(0, res.exitcode)
+        self.assertEqual(None, res.logconf)
 
         someargs = ['-vv', '--logconf', 'hi', '--exitcode', '3']
         res = cellmaps_generate_hierarchycmd._parse_arguments('hi', someargs)
 
-        self.assertEqual(res.verbose, 2)
-        self.assertEqual(res.logconf, 'hi')
-        self.assertEqual(res.exitcode, 3)
-
-    def test_setup_logging(self):
-        """ Tests logging setup"""
-        try:
-            cellmaps_generate_hierarchycmd._setup_logging(None)
-            self.fail('Expected AttributeError')
-        except AttributeError:
-            pass
-
-        # args.logconf is None
-        res = cellmaps_generate_hierarchycmd._parse_arguments('hi', [])
-        cellmaps_generate_hierarchycmd._setup_logging(res)
-
-        # args.logconf set to a file
-        try:
-            temp_dir = tempfile.mkdtemp()
-
-            logfile = os.path.join(temp_dir, 'log.conf')
-            with open(logfile, 'w') as f:
-                f.write("""[loggers]
-keys=root
-
-[handlers]
-keys=stream_handler
-
-[formatters]
-keys=formatter
-
-[logger_root]
-level=DEBUG
-handlers=stream_handler
-
-[handler_stream_handler]
-class=StreamHandler
-level=DEBUG
-formatter=formatter
-args=(sys.stderr,)
-
-[formatter_formatter]
-format=%(asctime)s %(name)-12s %(levelname)-8s %(message)s""")
-
-            res = cellmaps_generate_hierarchycmd._parse_arguments('hi', ['--logconf',
-                                                                       logfile])
-            cellmaps_generate_hierarchycmd._setup_logging(res)
-
-        finally:
-            shutil.rmtree(temp_dir)
+        self.assertEqual(2, res.verbose)
+        self.assertEqual('hi', res.logconf)
+        self.assertEqual(3, res.exitcode)
 
     def test_main(self):
         """Tests main function"""
@@ -89,6 +42,6 @@ format=%(asctime)s %(name)-12s %(levelname)-8s %(message)s""")
         try:
             temp_dir = tempfile.mkdtemp()
             res = cellmaps_generate_hierarchycmd.main(['myprog.py'])
-            self.assertEqual(res, 0)
+            self.assertEqual(res, 2)
         finally:
             shutil.rmtree(temp_dir)

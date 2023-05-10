@@ -5,14 +5,12 @@ import sys
 import logging
 import logging.config
 
+from cellmaps_utils import logutils
+from cellmaps_utils import constants
 import cellmaps_generate_hierarchy
-from cellmaps_generate_hierarchy.runner import CellmapsgeneratehierarchyRunner
+from cellmaps_generate_hierarchy.runner import CellmapsGenerateHierarchy
 
 logger = logging.getLogger(__name__)
-
-
-LOG_FORMAT = "%(asctime)-15s %(levelname)s %(relativeCreated)dms " \
-             "%(filename)s::%(funcName)s():%(lineno)d %(message)s"
 
 
 class Formatter(argparse.ArgumentDefaultsHelpFormatter,
@@ -37,7 +35,7 @@ def _parse_arguments(desc, args):
     :rtype: :py:class:`argparse.Namespace`
     """
     parser = argparse.ArgumentParser(description=desc,
-                                     formatter_class=Formatter)
+                                     formatter_class=constants.ArgParseFormatter)
     parser.add_argument('--logconf', default=None,
                         help='Path to python logging configuration file in '
                              'this format: https://docs.python.org/3/library/'
@@ -60,29 +58,6 @@ def _parse_arguments(desc, args):
     return parser.parse_args(args)
 
 
-def _setup_logging(args):
-    """
-    Sets up logging based on parsed command line arguments.
-    If args.logconf is set use that configuration otherwise look
-    at args.verbose and set logging for this module
-
-    :param args: parsed command line arguments from argparse
-    :raises AttributeError: If args is None or args.logconf is None
-    :return: None
-    """
-
-    if args.logconf is None:
-        level = (50 - (10 * args.verbose))
-        logging.basicConfig(format=LOG_FORMAT,
-                            level=level)
-        logger.setLevel(level)
-        return
-
-    # logconf was set use that file
-    logging.config.fileConfig(args.logconf,
-                              disable_existing_loggers=False)
-
-
 def main(args):
     """
     Main entry point for program
@@ -90,14 +65,14 @@ def main(args):
     :param args: arguments passed to command line usually :py:func:`sys.argv[1:]`
     :type args: list
 
-    :return: return value of :py:meth:`cellmaps_generate_hierarchy.runner.CellmapsgeneratehierarchyRunner.run`
+    :return: return value of :py:meth:`cellmaps_generate_hierarchy.runner.CellmapsGenerateHierarchy.run`
              or ``2`` if an exception is raised
     :rtype: int
     """
     desc = """
     Version {version}
 
-    Invokes run() method on CellmapsgeneratehierarchyRunner
+    Invokes run() method on CellmapsGenerateHierarchy
 
     """.format(version=cellmaps_generate_hierarchy.__version__)
     theargs = _parse_arguments(desc, args[1:])
@@ -105,8 +80,8 @@ def main(args):
     theargs.version = cellmaps_generate_hierarchy.__version__
 
     try:
-        _setup_logging(theargs)
-        return CellmapsgeneratehierarchyRunner(theargs.exitcode).run()
+        logutils.setup_cmd_logging(theargs)
+        return CellmapsGenerateHierarchy(theargs.exitcode).run()
     except Exception as e:
         logger.exception('Caught exception: ' + str(e))
         return 2

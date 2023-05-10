@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-class CellmapsgeneratehierarchyError(Exception):
+class CellmapsGenerateHierarchyError(Exception):
     """
     Base exception for cellmaps_generate_hierarchy
     """

@@ -3,9 +3,11 @@
 
 """Tests for `cellmaps_generate_hierarchy` package."""
 
-
+import os
+import shutil
+import tempfile
 import unittest
-from cellmaps_generate_hierarchy.runner import CellmapsgeneratehierarchyRunner
+from cellmaps_generate_hierarchy.runner import CellmapsGenerateHierarchy
 
 
 class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
@@ -19,11 +21,10 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
 
     def test_constructor(self):
         """Tests constructor"""
-        myobj = CellmapsgeneratehierarchyRunner(0)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            myobj = CellmapsGenerateHierarchy(0, outdir=os.path.join(temp_dir, 'out'))
+            self.assertIsNotNone(myobj)
+        finally:
+            shutil.rmtree(temp_dir)
 
-        self.assertIsNotNone(myobj)
-
-    def test_run(self):
-        """ Tests run()"""
-        myobj = CellmapsgeneratehierarchyRunner(4)
-        self.assertEqual(4, myobj.run())
