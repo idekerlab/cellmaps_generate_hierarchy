@@ -3,6 +3,7 @@
 import os
 import logging
 import time
+import json
 from cellmaps_utils import constants
 
 from cellmaps_utils import logutils
@@ -19,6 +20,8 @@ class CellmapsGenerateHierarchy(object):
     Class to run algorithm
     """
     def __init__(self, exitcode, outdir=None,
+                 ppigen=None,
+                 hiergen=None,
                  name=cellmaps_generate_hierarchy.__name__,
                  organization_name=None,
                  project_name=None,
@@ -29,12 +32,13 @@ class CellmapsGenerateHierarchy(object):
         :param exitcode: value to return via :py:meth:`.CellmapsGenerateHierarchy.run` method
         :type int:
         """
-        self._exitcode = exitcode
         logger.debug('In constructor')
         if outdir is None:
             raise CellmapsGenerateHierarchyError('outdir is None')
         self._outdir = os.path.abspath(outdir)
         self._start_time = int(time.time())
+        self._ppigen = ppigen
+        self._hiergen = hiergen
         self._name = name
         self._project_name = project_name
         self._organization_name = organization_name
@@ -96,6 +100,21 @@ class CellmapsGenerateHierarchy(object):
                                                     #used_dataset=[self._unique_datasetid, self._samples_datasetid],
                                                     #generated=[self._image_gene_attrid])
 
+    def get_ppi_network_dest_file(self, ppi_network):
+        """
+
+        :param ppi_network:
+        :return:
+        """
+        cutoff = ppi_network.get_network_attribute('cutoff')['v']
+        return os.path.join(self._outdir, constants.PPI_NETWORK_PREFIX +
+                            '_' + str(cutoff) + 'cutoff.cx')
+
+    def get_hierarchy_dest_file(self, hierarchy):
+        cutoff = hierarchy.get_network_attribute('cutoff')['v']
+        return os.path.join(self._outdir, constants.HIERARCHY_NETWORK_PREFIX +
+                            '_' + str(cutoff) + 'cutoff.cx')
+
     def run(self):
         """
         Runs CM4AI Generate Hierarchy
@@ -127,7 +146,18 @@ class CellmapsGenerateHierarchy(object):
             # https://github.com/fairscape/fairscape-cli/issues/7
             # self._register_software()
 
-            # Todo: add implementation here
+            for ppi_network in self._ppigen.get_next_network():
+
+                logger.debug('Writing PPI network ' + str(ppi_network.get_name()))
+                # write PPI to filesystem
+                with open(self.get_ppi_network_dest_file(ppi_network), 'w') as f:
+                    json.dump(ppi_network.to_cx(), f)
+
+                # generate hierarchy
+                logger.info('Creating hierarchy')
+                hierarchy = self._hiergen.get_hierarchy(ppi_network)
+                with open(self.get_hierarchy_dest_file(hierarchy), 'w') as f:
+                    json.dump(hierarchy.to_cx(), f)
 
             # Todo: uncomment when above work
             # Above registrations need to work for this to work

@@ -4,11 +4,11 @@
 """Tests for `CosineSimilarityPPIGenerator`."""
 
 import os
-import random
-import csv
+
 import shutil
 import tempfile
 import unittest
+from cellmaps_utils import constants
 from cellmaps_generate_hierarchy.runner import CellmapsGenerateHierarchy
 from cellmaps_generate_hierarchy.ppi import CosineSimilarityPPIGenerator
 
@@ -27,10 +27,18 @@ class TestCosineSimilarityPPIGenerator(unittest.TestCase):
                             'fake_4_node_coembedding.tsv')
 
     def test_fake_five_line_coembedding(self):
-        embeddingfile = self.get_fake_five_line_coembedding_file()
-        gen = CosineSimilarityPPIGenerator(embeddingfile=embeddingfile)
+        temp_dir = tempfile.mkdtemp()
+        try:
+            shutil.copy(self.get_fake_five_line_coembedding_file(),
+                        os.path.join(temp_dir, constants.CO_EMBEDDING_FILE))
+            gen = CosineSimilarityPPIGenerator(embeddingdir=temp_dir,
+                                               cutoffs=[1.0])
 
-        net = gen.get_network(cutoff=1.0)
-        self.assertEqual('cellmaps_generate_hierarchy PPI 1.0 cutoff', net.get_name())
-        self.assertEqual(6, len(net.get_edges()))
-        self.assertEqual(4, len(net.get_nodes()))
+            itr = gen.get_next_network()
+            net = next(itr, None)
+            self.assertEqual('cellmaps_generate_hierarchy PPI 1.0 cutoff', net.get_name())
+            self.assertEqual(6, len(net.get_edges()))
+            self.assertEqual(4, len(net.get_nodes()))
+            self.assertIsNone(next(itr, None))
+        finally:
+            shutil.rmtree(temp_dir)

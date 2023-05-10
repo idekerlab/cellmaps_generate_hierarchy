@@ -22,7 +22,8 @@ requirements = ['cellmaps_utils',
                 'tqdm',
                 'pandas',
                 'numpy',
-                'ndex2>=3.5.1']
+                'ndex2>=3.5.1',
+                'cdapsutil']
 
 setup_requirements = []
 
