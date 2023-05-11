@@ -17,9 +17,10 @@ logger = logging.getLogger(__name__)
 
 class CellmapsGenerateHierarchy(object):
     """
-    Class to run algorithm
+    Runs steps necessary to create PPI from embedding and to
+    generate a hierarchy
     """
-    def __init__(self, exitcode, outdir=None,
+    def __init__(self, outdir=None,
                  ppigen=None,
                  hiergen=None,
                  name=cellmaps_generate_hierarchy.__name__,
@@ -29,8 +30,16 @@ class CellmapsGenerateHierarchy(object):
         """
         Constructor
 
-        :param exitcode: value to return via :py:meth:`.CellmapsGenerateHierarchy.run` method
-        :type int:
+        :param outdir: Directory to create and put results in
+        :type outdir: str
+        :param ppigen: PPI Network Generator object, should be a subclass
+        :type ppigen: :py:class:`~cellmaps_generate_hierarchy.ppi.PPINetworkGenerator`
+        :param hiergen: Hierarchy Generator object, should be a subclass
+        :type hiergen: :py:class:`~cellmaps_generate_hierarchy.CXHierarchyGenerator`
+        :param name:
+        :param organization_name:
+        :param project_name:
+        :param provenance_utils:
         """
         logger.debug('In constructor')
         if outdir is None:
@@ -102,15 +111,28 @@ class CellmapsGenerateHierarchy(object):
 
     def get_ppi_network_dest_file(self, ppi_network):
         """
+        Gets the path where the PPI network should be written to
 
-        :param ppi_network:
-        :return:
+        :param ppi_network: PPI Network
+        :type ppi_network: :py:class:`ndex2.nice_cx_network.NiceCXNetwork`
+        :return: Path on filesystem to write the PPI network
+        :rtype: str
         """
         cutoff = ppi_network.get_network_attribute('cutoff')['v']
         return os.path.join(self._outdir, constants.PPI_NETWORK_PREFIX +
                             '_' + str(cutoff) + 'cutoff.cx')
 
     def get_hierarchy_dest_file(self, hierarchy):
+        """
+        Gets the path where the hierarchy should be written to.
+        Current implementation appends `_#cutoff` to filename
+        where `#` is the cutoff value used in making the PPI network
+
+        :param hierarchy: Hierarchy Network
+        :type hierarchy: :py:class:`ndex2.nice_cx_network.NiceCXNetwork`
+        :return: Path on filesystem to write Hierarchy Network
+        :rtype: str
+        """
         cutoff = hierarchy.get_network_attribute('cutoff')['v']
         return os.path.join(self._outdir, constants.HIERARCHY_NETWORK_PREFIX +
                             '_' + str(cutoff) + 'cutoff.cx')
@@ -163,27 +185,10 @@ class CellmapsGenerateHierarchy(object):
             # Above registrations need to work for this to work
             # register computation
             # self._register_computation()
+            exitcode = 0
         finally:
             logutils.write_task_finish_json(outdir=self._outdir,
                                             start_time=self._start_time,
                                             status=exitcode)
 
         return exitcode
-
-
-        """
-        with open(os.path.join(self._outdir, 'music_edgelist.tsv'), 'w') as f:
-
-            f.write('\t'.join(['GeneA', 'GeneB', 'Weight']) + '\n')
-            for genea in uniq_genes:
-                if len(genea) == 0:
-                    continue
-                for geneb in uniq_genes:
-                    if len(geneb) == 0:
-                        continue
-                    if genea == geneb:
-                        continue
-                    f.write(str(genea) + '\t' + str(geneb) + '\t' +
-                            str(random.random()) + '\n')
-        """
-        return self._exitcode

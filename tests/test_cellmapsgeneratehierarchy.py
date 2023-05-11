@@ -23,7 +23,7 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
         """Tests constructor"""
         temp_dir = tempfile.mkdtemp()
         try:
-            myobj = CellmapsGenerateHierarchy(0, outdir=os.path.join(temp_dir, 'out'))
+            myobj = CellmapsGenerateHierarchy(outdir=os.path.join(temp_dir, 'out'))
             self.assertIsNotNone(myobj)
         finally:
             shutil.rmtree(temp_dir)
