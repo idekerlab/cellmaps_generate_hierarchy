@@ -1,6 +1,9 @@
 
+import logging
 import cdapsutil
 
+
+logger = logging.getLogger(__name__)
 
 class CXHierarchyGenerator(object):
     """
@@ -42,8 +45,16 @@ class CDAPSHierarchyGenerator(CXHierarchyGenerator):
         :return:
         """
         cd = cdapsutil.CommunityDetection(runner=cdapsutil.ServiceRunner())
-        return cd.run_community_detection(network,
-                                          algorithm='hidef')
+
+        hierarchy = cd.run_community_detection(network,
+                                               algorithm='hidef')
+        cutoff = 'unknown'
+        try:
+            cutoff = network.get_network_attribute('cutoff')['v']
+        except Exception as e:
+            logger.error(str(e))
+        hierarchy.set_network_attribute(name='cutoff', values=str(cutoff))
+        return hierarchy
 
 
 

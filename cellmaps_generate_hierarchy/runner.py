@@ -4,6 +4,7 @@ import os
 import logging
 import time
 import json
+from tqdm import tqdm
 from cellmaps_utils import constants
 
 from cellmaps_utils import logutils
@@ -26,7 +27,8 @@ class CellmapsGenerateHierarchy(object):
                  name=cellmaps_generate_hierarchy.__name__,
                  organization_name=None,
                  project_name=None,
-                 provenance_utils=ProvenanceUtil()):
+                 provenance_utils=ProvenanceUtil(),
+                 input_data_dict=None):
         """
         Constructor
 
@@ -51,6 +53,7 @@ class CellmapsGenerateHierarchy(object):
         self._name = name
         self._project_name = project_name
         self._organization_name = organization_name
+        self._input_data_dict = input_data_dict
         self._provenance_utils = provenance_utils
 
     def _create_run_crate(self):
@@ -158,7 +161,7 @@ class CellmapsGenerateHierarchy(object):
                                       handlerprefix='cellmaps_image_embedding')
             logutils.write_task_start_json(outdir=self._outdir,
                                            start_time=self._start_time,
-                                           data={},
+                                           data={'commandlineargs': self._input_data_dict},
                                            version=cellmaps_generate_hierarchy.__version__)
 
             self._create_run_crate()
@@ -168,7 +171,7 @@ class CellmapsGenerateHierarchy(object):
             # https://github.com/fairscape/fairscape-cli/issues/7
             # self._register_software()
 
-            for ppi_network in self._ppigen.get_next_network():
+            for ppi_network in tqdm(self._ppigen.get_next_network(), desc='Generating hierarchy'):
 
                 logger.debug('Writing PPI network ' + str(ppi_network.get_name()))
                 # write PPI to filesystem
