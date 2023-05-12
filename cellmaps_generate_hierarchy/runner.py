@@ -4,9 +4,9 @@ import os
 import logging
 import time
 import json
+from datetime import date
 from tqdm import tqdm
 from cellmaps_utils import constants
-
 from cellmaps_utils import logutils
 from cellmaps_utils.provenance import ProvenanceUtil
 import cellmaps_generate_hierarchy
@@ -22,9 +22,10 @@ class CellmapsGenerateHierarchy(object):
     generate a hierarchy
     """
     def __init__(self, outdir=None,
+                 inputdir=None,
                  ppigen=None,
                  hiergen=None,
-                 name=cellmaps_generate_hierarchy.__name__,
+                 name=None,
                  organization_name=None,
                  project_name=None,
                  provenance_utils=ProvenanceUtil(),
@@ -47,6 +48,7 @@ class CellmapsGenerateHierarchy(object):
         if outdir is None:
             raise CellmapsGenerateHierarchyError('outdir is None')
         self._outdir = os.path.abspath(outdir)
+        self._inputdir = inputdir
         self._start_time = int(time.time())
         self._ppigen = ppigen
         self._hiergen = hiergen
@@ -56,24 +58,23 @@ class CellmapsGenerateHierarchy(object):
         self._input_data_dict = input_data_dict
         self._provenance_utils = provenance_utils
 
-    def _create_run_crate(self):
+    def _create_rocrate(self):
         """
         Creates rocrate for output directory
 
         :raises CellMapsProvenanceError: If there is an error
         """
-        name = self._name
-        if name is None:
-            name = 'TODO better set this via input rocrate'
+        logger.debug('Registering rocrate with FAIRSCAPE')
+        name, proj_name, org_name = self._provenance_utils.get_name_project_org_of_rocrate(self._inputdir)
 
-        # TODO: If organization or project name is unset need to pull from input rocrate
-        org_name = self._organization_name
-        if org_name is None:
-            org_name = 'TODO BETTER SET THIS via input rocrate'
+        if self._name is not None:
+            name = self._name
 
-        proj_name = self._project_name
-        if proj_name is None:
-            proj_name = 'TODO BETTER SET THIS via input rocrate'
+        if self._organization_name is not None:
+            org_name = self._organization_name
+
+        if self._project_name is not None:
+            proj_name = self._project_name
         try:
             self._provenance_utils.register_rocrate(self._outdir,
                                                     name=name,
@@ -91,26 +92,28 @@ class CellmapsGenerateHierarchy(object):
         :raises CellMapsImageEmbeddingError: If fairscape call fails
         """
         self._softwareid = self._provenance_utils.register_software(self._outdir,
-                                                                    name=self._name,
+                                                                    name=cellmaps_generate_hierarchy.__name__,
                                                                     description=cellmaps_generate_hierarchy.__description__,
                                                                     author=cellmaps_generate_hierarchy.__author__,
                                                                     version=cellmaps_generate_hierarchy.__version__,
                                                                     file_format='.py',
                                                                     url=cellmaps_generate_hierarchy.__repo_url__)
 
-    def _register_computation(self):
+    def _register_computation(self, generated_dataset_ids=[]):
         """
         # Todo: added inused dataset, software and what is being generated
         :return:
         """
+        logger.debug('Getting id of input rocrate')
+        input_dataset_id = self._provenance_utils.get_id_of_rocrate(self._inputdir)
         self._provenance_utils.register_computation(self._outdir,
                                                     name=cellmaps_generate_hierarchy.__name__ + ' computation',
                                                     run_by=str(os.getlogin()),
                                                     command=str(self._input_data_dict),
                                                     description='run of ' + cellmaps_generate_hierarchy.__name__,
-                                                    used_software=[self._softwareid])
-                                                    #used_dataset=[self._unique_datasetid, self._samples_datasetid],
-                                                    #generated=[self._image_gene_attrid])
+                                                    used_software=[self._softwareid],
+                                                    used_dataset=[input_dataset_id],
+                                                    generated=generated_dataset_ids)
 
     def get_ppi_network_dest_file(self, ppi_network):
         """
@@ -123,7 +126,7 @@ class CellmapsGenerateHierarchy(object):
         """
         cutoff = ppi_network.get_network_attribute('cutoff')['v']
         return os.path.join(self._outdir, constants.PPI_NETWORK_PREFIX +
-                            '_' + str(cutoff) + 'cutoff.cx')
+                            '_cutoff_' + str(cutoff) + constants.CX_SUFFIX)
 
     def get_hierarchy_dest_file(self, hierarchy):
         """
@@ -136,9 +139,14 @@ class CellmapsGenerateHierarchy(object):
         :return: Path on filesystem to write Hierarchy Network
         :rtype: str
         """
-        cutoff = hierarchy.get_network_attribute('cutoff')['v']
+        cutoff = 'unknown'
+        try:
+            cutoff = hierarchy.get_network_attribute('cutoff')['v']
+        except Exception as e:
+            logger.error('Unable to get cutoff from hierarchy network ' + str(e))
+
         return os.path.join(self._outdir, constants.HIERARCHY_NETWORK_PREFIX +
-                            '_' + str(cutoff) + 'cutoff.cx')
+                            '_cutoff_' + str(cutoff) + constants.CX_SUFFIX)
 
     def run(self):
         """
@@ -164,30 +172,47 @@ class CellmapsGenerateHierarchy(object):
                                            data={'commandlineargs': self._input_data_dict},
                                            version=cellmaps_generate_hierarchy.__version__)
 
-            self._create_run_crate()
+            self._create_rocrate()
 
-            # Todo: uncomment when fixed
-            # register software fails due to this bug:
-            # https://github.com/fairscape/fairscape-cli/issues/7
-            # self._register_software()
-
+            self._register_software()
+            generated_dataset_ids = []
             for ppi_network in tqdm(self._ppigen.get_next_network(), desc='Generating hierarchy'):
 
                 logger.debug('Writing PPI network ' + str(ppi_network.get_name()))
                 # write PPI to filesystem
-                with open(self.get_ppi_network_dest_file(ppi_network), 'w') as f:
+                ppi_out_file = self.get_ppi_network_dest_file(ppi_network)
+                with open(ppi_out_file, 'w') as f:
                     json.dump(ppi_network.to_cx(), f)
+
+                # register ppi network file with fairscape
+                data_dict = {'name': os.path.basename(ppi_out_file) + ' PPI network file',
+                             'description': 'PPI Network file',
+                             'data-format': 'CX',
+                             'author': cellmaps_generate_hierarchy.__name__,
+                             'version': cellmaps_generate_hierarchy.__version__,
+                             'date-published': date.today().strftime('%m-%d-%Y')}
+                generated_dataset_ids.append(self._provenance_utils.register_dataset(self._outdir,
+                                                                                     source_file=ppi_out_file,
+                                                                                     data_dict=data_dict))
 
                 # generate hierarchy
                 logger.info('Creating hierarchy')
                 hierarchy = self._hiergen.get_hierarchy(ppi_network)
-                with open(self.get_hierarchy_dest_file(hierarchy), 'w') as f:
+                hierarchy_out_file = self.get_hierarchy_dest_file(hierarchy)
+                with open(hierarchy_out_file, 'w') as f:
                     json.dump(hierarchy.to_cx(), f)
+                    # register ppi network file with fairscape
+                    data_dict = {'name': os.path.basename(hierarchy_out_file) + ' Hierarchy network file',
+                                 'description': 'Hierarchy network file',
+                                 'data-format': 'CX',
+                                 'author': cellmaps_generate_hierarchy.__name__,
+                                 'version': cellmaps_generate_hierarchy.__version__,
+                                 'date-published': date.today().strftime('%m-%d-%Y')}
+                    generated_dataset_ids.append(self._provenance_utils.register_dataset(self._outdir,
+                                                                                         source_file=hierarchy_out_file,
+                                                                                         data_dict=data_dict))
 
-            # Todo: uncomment when above work
-            # Above registrations need to work for this to work
-            # register computation
-            # self._register_computation()
+            self._register_computation(generated_dataset_ids=generated_dataset_ids)
             exitcode = 0
         finally:
             logutils.write_task_finish_json(outdir=self._outdir,
