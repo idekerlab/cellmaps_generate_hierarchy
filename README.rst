@@ -13,11 +13,7 @@ CM4AI Generate Hierarchy
         :target: https://cellmaps-generate-hierarchy.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-
-
-
-Python Boilerplate contains all the boilerplate you need to create a Python package with command line
-
+A tool to generate hierarchies from protein to protein interaction networks
 
 * Free software: MIT license
 * Documentation: https://cellmaps-generate-hierarchy.readthedocs.io.
@@ -27,12 +23,17 @@ Python Boilerplate contains all the boilerplate you need to create a Python pack
 Dependencies
 ------------
 
-* TODO add
+* `cellmaps_utils <https://pypi.org/project/cellmaps-utils>`__
+* `tqdm <https://pypi.org/project/tqdm>`__
+* `pandas <https://pypi.org/project/pandas>`__
+* `numpy <https://pypi.org/project/numpy>`__
+* `ndex2 <https://pypi.org/project/ndex2>`__
+* `cdapsutil <https://pypi.org/project/cdapsutil>`__
 
 Compatibility
 -------------
 
-* Python 3.3+
+* Python 3.8+
 
 Installation
 ------------

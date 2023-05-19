@@ -15,14 +15,7 @@ from cellmaps_generate_hierarchy.runner import CellmapsGenerateHierarchy
 logger = logging.getLogger(__name__)
 
 
-class Formatter(argparse.ArgumentDefaultsHelpFormatter,
-                argparse.RawDescriptionHelpFormatter):
-    """
-    Combine two Formatters to get help and default values
-    displayed when showing help
-
-    """
-    pass
+CO_EMBEDDINGDIR='--coembedding_dir'
 
 
 def _parse_arguments(desc, args):
@@ -39,7 +32,7 @@ def _parse_arguments(desc, args):
     parser = argparse.ArgumentParser(description=desc,
                                      formatter_class=constants.ArgParseFormatter)
     parser.add_argument('outdir', help='Output directory')
-    parser.add_argument('--coembedding_dir', required=True,
+    parser.add_argument(CO_EMBEDDINGDIR, required=True,
                         help='Directory where coembedding was run')
     parser.add_argument('--name',
                         help='Name of this run, needed for FAIRSCAPE. If '
@@ -87,9 +80,23 @@ def main(args):
     desc = """
     Version {version}
 
-    Invokes run() method on CellmapsGenerateHierarchy
+    Takes a coembedding file {coembedding_file} file from {coembedding_dir} directory that
+    is in TSV format and generates an interaction network
+    from which a hierarchy is derived. 
+    
+    Format of {coembedding_file} where 1st line is header:
+    
+    ''\t1\t2\t3\t4\t5...1024
+    GENESYMBOL\tEMBEDDING1\tEMBEDDING2...
+    
+    Example:
+    
+            1       2       3       4       5
+    AAAS    -0.35026753     -0.1307554      -0.046265163    0.3758623       0.22126552
 
-    """.format(version=cellmaps_generate_hierarchy.__version__)
+    """.format(version=cellmaps_generate_hierarchy.__version__,
+               coembedding_file=constants.CO_EMBEDDING_FILE,
+               coembedding_dir=CO_EMBEDDINGDIR)
     theargs = _parse_arguments(desc, args[1:])
     theargs.program = args[0]
     theargs.version = cellmaps_generate_hierarchy.__version__
