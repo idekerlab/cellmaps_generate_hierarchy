@@ -108,7 +108,7 @@ class CellmapsGenerateHierarchy(object):
         input_dataset_id = self._provenance_utils.get_id_of_rocrate(self._inputdir)
         self._provenance_utils.register_computation(self._outdir,
                                                     name=cellmaps_generate_hierarchy.__name__ + ' computation',
-                                                    run_by=str(os.getlogin()),
+                                                    run_by=str(self._provenance_utils.get_login()),
                                                     command=str(self._input_data_dict),
                                                     description='run of ' + cellmaps_generate_hierarchy.__name__,
                                                     used_software=[self._softwareid],
