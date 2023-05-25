@@ -41,7 +41,7 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
     Generates hierarchy using HiDeF
     """
 
-    HIDEF_OUT_PREFIX = 'hidef_out'
+    HIDEF_OUT_PREFIX = 'hidef_output'
 
     CDRES_KEY_NAME = 'communityDetectionResult'
 
@@ -290,16 +290,14 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
         largest_n_size = 0
         largest_n = None
         for n in networks:
-
             if os.path.getsize(n + constants.CX_SUFFIX) > largest_n_size:
-
                 largest_n = n
 
         edgelist_files = [n + '.tsv' for n in networks]
 
         cmd = [self._hidef_cmd, '--g']
         cmd.extend(edgelist_files)
-        cmd.extend(['--o', os.path.join(outdir, 'hidef_output'),
+        cmd.extend(['--o', os.path.join(outdir, HiDeFHierarchyGenerator.HIDEF_OUT_PREFIX),
                     '--alg', 'leiden', '--maxres', '40', '--k', '10',
                     '--skipgml'])
 
@@ -315,7 +313,7 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
 
             cd = cdapsutil.CommunityDetection(runner=cdapsutil.ExternalResultsRunner())
             # need to find the largest of the networks passed in
-            return cd.run(ndex2.create_nice_cx_from_file(largest_n), algorithm=cdaps_out_file)
+            return cd.run(ndex2.create_nice_cx_from_file(largest_n + constants.CX_SUFFIX), algorithm=cdaps_out_file)
 
         except FileNotFoundError as fe:
             logger.error('No output from hidef: ' + str(fe) + '\n')
