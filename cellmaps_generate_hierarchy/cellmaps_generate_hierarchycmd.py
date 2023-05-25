@@ -9,7 +9,7 @@ from cellmaps_utils import logutils
 from cellmaps_utils import constants
 import cellmaps_generate_hierarchy
 from cellmaps_generate_hierarchy.ppi import CosineSimilarityPPIGenerator
-from cellmaps_generate_hierarchy.hierarchy import CDAPSHierarchyGenerator
+from cellmaps_generate_hierarchy.hierarchy import HiDeFHierarchyGenerator
 from cellmaps_generate_hierarchy.runner import CellmapsGenerateHierarchy
 
 logger = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ def main(args):
 
         ppigen = CosineSimilarityPPIGenerator(embeddingdir=theargs.coembedding_dir)
 
-        hiergen = CDAPSHierarchyGenerator()
+        hiergen = HiDeFHierarchyGenerator()
         return CellmapsGenerateHierarchy(outdir=theargs.outdir,
                                          inputdir=theargs.coembedding_dir,
                                          ppigen=ppigen,

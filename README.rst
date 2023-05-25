@@ -28,7 +28,18 @@ Dependencies
 * `pandas <https://pypi.org/project/pandas>`__
 * `numpy <https://pypi.org/project/numpy>`__
 * `ndex2 <https://pypi.org/project/ndex2>`__
-* `cdapsutil <https://pypi.org/project/cdapsutil>`__
+* `HiDef <https://github.com/fanzheng10/HiDeF>`__
+   HiDef must be built directly from source which can be done by running the following commands:
+
+  .. code-block:: python
+
+    git clone https://github.com/fanzheng10/HiDeF.git
+    cd HiDeF
+    make dist
+    pip install dist/hidef*whl
+
+
+
 
 Compatibility
 -------------

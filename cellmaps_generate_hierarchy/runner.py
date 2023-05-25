@@ -101,7 +101,7 @@ class CellmapsGenerateHierarchy(object):
 
     def _register_computation(self, generated_dataset_ids=[]):
         """
-        # Todo: added inused dataset, software and what is being generated
+        # Todo: added in used dataset, software and what is being generated
         :return:
         """
         logger.debug('Getting id of input rocrate')
@@ -126,17 +126,22 @@ class CellmapsGenerateHierarchy(object):
         """
         cutoff = ppi_network.get_network_attribute('cutoff')['v']
         return os.path.join(self._outdir, constants.PPI_NETWORK_PREFIX +
-                            '_cutoff_' + str(cutoff) + constants.CX_SUFFIX)
+                            '_cutoff_' + str(cutoff))
 
     def get_hierarchy_dest_file(self, hierarchy):
         """
-        Gets the path where the hierarchy should be written to.
-        Current implementation appends `_#cutoff` to filename
-        where `#` is the cutoff value used in making the PPI network
+        Creates file path prefix for hierarchy
+
+        Current implementation appends `_cutoff` to filename
+        where `#` is the cutoff value found in the **cutoff**
+        network attribute of the hierarchy, otherwise **cutoff**
+        will be set to ``unknown``
+
+        Example path: ``/tmp/foo/hierarchy_cutoff_0.01``
 
         :param hierarchy: Hierarchy Network
         :type hierarchy: :py:class:`ndex2.nice_cx_network.NiceCXNetwork`
-        :return: Path on filesystem to write Hierarchy Network
+        :return: Prefix path on filesystem to write Hierarchy Network
         :rtype: str
         """
         cutoff = 'unknown'
@@ -146,7 +151,86 @@ class CellmapsGenerateHierarchy(object):
             logger.error('Unable to get cutoff from hierarchy network ' + str(e))
 
         return os.path.join(self._outdir, constants.HIERARCHY_NETWORK_PREFIX +
-                            '_cutoff_' + str(cutoff) + constants.CX_SUFFIX)
+                            '_cutoff_' + str(cutoff))
+
+    def _write_and_register_ppi_network_as_cx(self, ppi_network, dest_path=None):
+        """
+
+        :param network:
+        :return:
+        """
+        logger.debug('Writing PPI network ' + str(ppi_network.get_name()))
+        # write PPI to filesystem
+
+        with open(dest_path, 'w') as f:
+            json.dump(ppi_network.to_cx(), f)
+
+        # register ppi network file with fairscape
+        data_dict = {'name': os.path.basename(dest_path) + ' PPI network file',
+                     'description': 'PPI Network file',
+                     'data-format': 'CX',
+                     'author': cellmaps_generate_hierarchy.__name__,
+                     'version': cellmaps_generate_hierarchy.__version__,
+                     'date-published': date.today().strftime('%m-%d-%Y')}
+        return self._provenance_utils.register_dataset(self._outdir,
+                                                       source_file=dest_path,
+                                                       data_dict=data_dict)
+
+    def _write_and_register_ppi_network_as_edgelist(self, ppi_network, dest_path=None):
+        """
+        Writes out **ppi_network** passed in as edge list file
+
+        :param ppi_network:
+        :type ppi_network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :return: (dataset id, path to output file)
+        :rtype: tuple
+        """
+        logger.debug('Writing PPI network ' + str(ppi_network.get_name()))
+
+        # build dict of node ids to gene names
+        name_dict = {}
+        for node_id, node_obj in ppi_network.get_nodes():
+            name_dict[node_id] = node_obj['n']
+
+        # write PPI to filesystem
+        with open(dest_path, 'w') as f:
+            for edge_id, edge_obj in ppi_network.get_edges():
+                # todo get weight
+                f.write(name_dict[edge_obj['s']] + '\t' + str(name_dict[edge_obj['t']]) + '\n')
+
+        # register ppi network file with fairscape
+        data_dict = {'name': os.path.basename(dest_path) + ' PPI edgelist file',
+                     'description': 'PPI Edgelist file',
+                     'data-format': 'tsv',
+                     'author': cellmaps_generate_hierarchy.__name__,
+                     'version': cellmaps_generate_hierarchy.__version__,
+                     'date-published': date.today().strftime('%m-%d-%Y')}
+        dataset_id = self._provenance_utils.register_dataset(self._outdir,
+                                                             source_file=dest_path,
+                                                             data_dict=data_dict)
+        return dataset_id
+
+    def _write_and_register_hierarchy_network(self, hierarchy):
+        """
+
+        :param network:
+        :return:
+        """
+        logger.debug('Writing hierarchy')
+        hierarchy_out_file = self.get_hierarchy_dest_file(hierarchy) + constants.CX_SUFFIX
+        with open(hierarchy_out_file, 'w') as f:
+            json.dump(hierarchy.to_cx(), f)
+            # register ppi network file with fairscape
+            data_dict = {'name': os.path.basename(hierarchy_out_file) + ' Hierarchy network file',
+                         'description': 'Hierarchy network file',
+                         'data-format': 'CX',
+                         'author': cellmaps_generate_hierarchy.__name__,
+                         'version': cellmaps_generate_hierarchy.__version__,
+                         'date-published': date.today().strftime('%m-%d-%Y')}
+            dataset_id = self._provenance_utils.register_dataset(self._outdir,
+                                                                 source_file=hierarchy_out_file,
+                                                                 data_dict=data_dict)
+        return dataset_id, hierarchy_out_file
 
     def run(self):
         """
@@ -175,43 +259,27 @@ class CellmapsGenerateHierarchy(object):
             self._create_rocrate()
 
             self._register_software()
+
             generated_dataset_ids = []
+            ppi_network_prefix_paths = []
+            # generate PPI networks
             for ppi_network in tqdm(self._ppigen.get_next_network(), desc='Generating hierarchy'):
+                dest_prefix = self.get_ppi_network_dest_file(ppi_network)
+                ppi_network_prefix_paths.append(dest_prefix)
+                cx_path = dest_prefix + constants.CX_SUFFIX
+                generated_dataset_ids.append(self._write_and_register_ppi_network_as_cx(ppi_network,
+                                                                                        dest_path=cx_path))
+                edgelist_path = dest_prefix + '.tsv'
+                generated_dataset_ids.append(self._write_and_register_ppi_network_as_edgelist(ppi_network,
+                                                                                              dest_path=edgelist_path))
+            # generate hierarchy
+            hierarchy = self._hiergen.get_hierarchy(ppi_network_prefix_paths)
 
-                logger.debug('Writing PPI network ' + str(ppi_network.get_name()))
-                # write PPI to filesystem
-                ppi_out_file = self.get_ppi_network_dest_file(ppi_network)
-                with open(ppi_out_file, 'w') as f:
-                    json.dump(ppi_network.to_cx(), f)
+            # write out hierarchy
+            dataset_id, hierarchy_out_file = self._write_and_register_hierarchy_network(hierarchy)
+            generated_dataset_ids.append(dataset_id)
 
-                # register ppi network file with fairscape
-                data_dict = {'name': os.path.basename(ppi_out_file) + ' PPI network file',
-                             'description': 'PPI Network file',
-                             'data-format': 'CX',
-                             'author': cellmaps_generate_hierarchy.__name__,
-                             'version': cellmaps_generate_hierarchy.__version__,
-                             'date-published': date.today().strftime('%m-%d-%Y')}
-                generated_dataset_ids.append(self._provenance_utils.register_dataset(self._outdir,
-                                                                                     source_file=ppi_out_file,
-                                                                                     data_dict=data_dict))
-
-                # generate hierarchy
-                logger.info('Creating hierarchy')
-                hierarchy = self._hiergen.get_hierarchy(ppi_network)
-                hierarchy_out_file = self.get_hierarchy_dest_file(hierarchy)
-                with open(hierarchy_out_file, 'w') as f:
-                    json.dump(hierarchy.to_cx(), f)
-                    # register ppi network file with fairscape
-                    data_dict = {'name': os.path.basename(hierarchy_out_file) + ' Hierarchy network file',
-                                 'description': 'Hierarchy network file',
-                                 'data-format': 'CX',
-                                 'author': cellmaps_generate_hierarchy.__name__,
-                                 'version': cellmaps_generate_hierarchy.__version__,
-                                 'date-published': date.today().strftime('%m-%d-%Y')}
-                    generated_dataset_ids.append(self._provenance_utils.register_dataset(self._outdir,
-                                                                                         source_file=hierarchy_out_file,
-                                                                                         data_dict=data_dict))
-
+            # register generated datasets
             self._register_computation(generated_dataset_ids=generated_dataset_ids)
             exitcode = 0
         finally:
