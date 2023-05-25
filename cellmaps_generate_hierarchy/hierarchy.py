@@ -92,7 +92,8 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
         cmd = [self._hidef_cmd, '--g']
         cmd.extend(edgelist_files)
         cmd.extend(['--o', os.path.join(outdir, 'hidef_output'),
-                    '--alg', 'leiden', '--maxres', '40', '--k', '10'])
+                    '--alg', 'leiden', '--maxres', '40', '--k', '10',
+                    '--skipgml'])
 
         exit_code, out, err = self._run_cmd(cmd)
         if exit_code != 0:
