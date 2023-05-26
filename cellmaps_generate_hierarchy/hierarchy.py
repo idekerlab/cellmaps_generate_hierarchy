@@ -81,7 +81,6 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                          version=version)
         self._hidef_cmd = hidef_cmd
 
-
     def _get_max_node_id(self, nodes_file):
         """
         Examines the 'nodes_file' passed in and finds the value of
