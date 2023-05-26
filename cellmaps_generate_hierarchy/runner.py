@@ -132,26 +132,14 @@ class CellmapsGenerateHierarchy(object):
         """
         Creates file path prefix for hierarchy
 
-        Current implementation appends `_cutoff` to filename
-        where `#` is the cutoff value found in the **cutoff**
-        network attribute of the hierarchy, otherwise **cutoff**
-        will be set to ``unknown``
-
-        Example path: ``/tmp/foo/hierarchy_cutoff_0.01``
+        Example path: ``/tmp/foo/hierarchy``
 
         :param hierarchy: Hierarchy Network
         :type hierarchy: :py:class:`ndex2.nice_cx_network.NiceCXNetwork`
         :return: Prefix path on filesystem to write Hierarchy Network
         :rtype: str
         """
-        cutoff = 'unknown'
-        try:
-            cutoff = hierarchy.get_network_attribute('cutoff')['v']
-        except Exception as e:
-            logger.error('Unable to get cutoff from hierarchy network ' + str(e))
-
-        return os.path.join(self._outdir, constants.HIERARCHY_NETWORK_PREFIX +
-                            '_cutoff_' + str(cutoff))
+        return os.path.join(self._outdir, constants.HIERARCHY_NETWORK_PREFIX)
 
     def _write_and_register_ppi_network_as_cx(self, ppi_network, dest_path=None):
         """
@@ -276,6 +264,9 @@ class CellmapsGenerateHierarchy(object):
             # write out hierarchy
             dataset_id, hierarchy_out_file = self._write_and_register_hierarchy_network(hierarchy)
             generated_dataset_ids.append(dataset_id)
+
+            # add datasets created by hiergen object
+            generated_dataset_ids.extend(self._hiergen.get_generated_dataset_ids())
 
             # register generated datasets
             self._register_computation(generated_dataset_ids=generated_dataset_ids)

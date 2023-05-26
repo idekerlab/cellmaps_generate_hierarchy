@@ -7,9 +7,10 @@ import logging.config
 
 from cellmaps_utils import logutils
 from cellmaps_utils import constants
+from cellmaps_utils.provenance import ProvenanceUtil
 import cellmaps_generate_hierarchy
 from cellmaps_generate_hierarchy.ppi import CosineSimilarityPPIGenerator
-from cellmaps_generate_hierarchy.hierarchy import HiDeFHierarchyGenerator
+from cellmaps_generate_hierarchy.hierarchy import CDAPSHiDeFHierarchyGenerator
 from cellmaps_generate_hierarchy.runner import CellmapsGenerateHierarchy
 
 logger = logging.getLogger(__name__)
@@ -103,15 +104,18 @@ def main(args):
 
     try:
         logutils.setup_cmd_logging(theargs)
-
+        provenance = ProvenanceUtil()
         ppigen = CosineSimilarityPPIGenerator(embeddingdir=theargs.coembedding_dir)
 
-        hiergen = HiDeFHierarchyGenerator()
+        hiergen = CDAPSHiDeFHierarchyGenerator(author=cellmaps_generate_hierarchy.__author__,
+                                               version=cellmaps_generate_hierarchy.__version__,
+                                               provenance_utils=provenance)
         return CellmapsGenerateHierarchy(outdir=theargs.outdir,
                                          inputdir=theargs.coembedding_dir,
                                          ppigen=ppigen,
                                          hiergen=hiergen,
-                                         input_data_dict=theargs.__dict__).run()
+                                         input_data_dict=theargs.__dict__,
+                                         provenance_utils=provenance).run()
     except Exception as e:
         logger.exception('Caught exception: ' + str(e))
         return 2

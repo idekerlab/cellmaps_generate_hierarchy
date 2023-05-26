@@ -19,11 +19,25 @@ class CXHierarchyGenerator(object):
     that is output in CX format following
     CDAPS style
     """
-    def __init__(self):
+    def __init__(self,
+                 provenance_utils=ProvenanceUtil(),
+                 author=None,
+                 version=None):
         """
         Constructor
         """
-        pass
+        self._provenance_utils = provenance_utils
+        self._author = author
+        self._version = version
+        self._generated_dataset_ids = []
+
+    def get_generated_dataset_ids(self):
+        """
+        Gets IDs of datasets created by this object
+        that have been registered with FAIRSCAPE
+        :return:
+        """
+        return self._generated_dataset_ids
 
     def get_hierarchy(self, networks):
         """
@@ -36,10 +50,14 @@ class CXHierarchyGenerator(object):
         raise NotImplementedError('Subclasses need to implement')
 
 
-class HiDeFHierarchyGenerator(CXHierarchyGenerator):
+class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
     """
     Generates hierarchy using HiDeF
     """
+
+    CDAPS_JSON_FILE = 'cdaps.json'
+
+    EDGELIST_TSV = '.id.edgelist.tsv'
 
     HIDEF_OUT_PREFIX = 'hidef_output'
 
@@ -51,12 +69,18 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
 
     PERSISTENCE_COL_NAME = 'HiDeF_persistence'
 
-    def __init__(self, hidef_cmd='hidef_finder.py'):
+    def __init__(self, hidef_cmd='hidef_finder.py',
+                 provenance_utils=None,
+                 author=None,
+                 version=None):
         """
         Constructor
         """
-        super().__init__()
+        super().__init__(provenance_utils=provenance_utils,
+                         author=author,
+                         version=version)
         self._hidef_cmd = hidef_cmd
+
 
     def _get_max_node_id(self, nodes_file):
         """
@@ -187,9 +211,9 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
         :param persistence_map:
         :return:
         """
-        out_stream.write('"' + HiDeFHierarchyGenerator.NODE_CX_KEY_NAME + '": {')
-        out_stream.write('"' + HiDeFHierarchyGenerator.ATTR_DEC_NAME + '": [{')
-        out_stream.write('"nodes": { "' + HiDeFHierarchyGenerator.PERSISTENCE_COL_NAME +
+        out_stream.write('"' + CDAPSHiDeFHierarchyGenerator.NODE_CX_KEY_NAME + '": {')
+        out_stream.write('"' + CDAPSHiDeFHierarchyGenerator.ATTR_DEC_NAME + '": [{')
+        out_stream.write('"nodes": { "' + CDAPSHiDeFHierarchyGenerator.PERSISTENCE_COL_NAME +
                          '": { "d": "integer", "a": "p1", "v": 0}}}],')
         out_stream.write('"nodes": [')
         is_first = True
@@ -225,7 +249,9 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
         :type outdir: str
         :return: None
         """
-        nodefile = os.path.join(outdir, HiDeFHierarchyGenerator.HIDEF_OUT_PREFIX + '.nodes')
+        nodefile = os.path.join(outdir,
+                                CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX +
+                                '.nodes')
         max_node_id = self._get_max_node_id(nodefile)
         cluster_node_map = {}
         persistence_map = {}
@@ -234,12 +260,12 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
             linereader = csv.reader(csvfile, delimiter='\t')
             for row in linereader:
                 max_node_id, cur_node_id = self.update_cluster_node_map(cluster_node_map,
-                                                                   row[0],
-                                                                   max_node_id)
+                                                                        row[0],
+                                                                        max_node_id)
                 self.update_persistence_map(persistence_map, cur_node_id, row[-1])
                 self.write_members_for_row(out_stream, row,
                                       cur_node_id)
-        edge_file = os.path.join(outdir, HiDeFHierarchyGenerator.HIDEF_OUT_PREFIX + '.edges')
+        edge_file = os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX + '.edges')
         self.write_communities(out_stream, edge_file, cluster_node_map)
         self.write_persistence_node_attribute(out_stream, persistence_map)
         out_stream.write('\n')
@@ -274,42 +300,102 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
 
     def _create_edgelist_files_for_networks(self, networks):
         """
-        Iterates through network prefix paths and loads the
-        CX files. Method then creates a PREFIX_PATH.id.edgelist.tsv
+        Iterates through **networks** prefix paths and loads the
+        CX files. Method then creates a PREFIX_PATH
+        :py:const:`CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV`
         file for each network and returns those paths as a list
 
-        :param networks:
-        :return:
+        :param networks: Prefix paths of input PPI networks
+        :type networks: list
+        :return: (:py:class:`~ndex2.nice_cx_network.NiceCXNetwork`, :py:class:`list`)
+        :rtype: tuple
         """
         net_paths = []
         largest_network = None
         max_edge_count = 0
         for n in networks:
+            logger.debug('Creating NiceCXNetwork object from: ' + n + constants.CX_SUFFIX)
             net = ndex2.create_nice_cx_from_file(n + constants.CX_SUFFIX)
-            dest_path = n + '.id.edgelist.tsv'
+            dest_path = n + CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV
             net_paths.append(dest_path)
             edge_count = 0
+            logger.debug('Writing out id edgelist: ' + str(dest_path))
             with open(dest_path, 'w') as f:
                 for edge_id, edge_obj in net.get_edges():
                     f.write(str(edge_obj['s']) + '\t' + str(edge_obj['t']) + '\n')
                     edge_count += 1
+
+            # find the largest network by edge count
             if edge_count >= max_edge_count:
                 largest_network = net
 
+                # register edgelist file with fairscape
+                data_dict = {'name': os.path.basename(dest_path) +
+                                     ' PPI id edgelist file',
+                             'description': 'PPI id edgelist file',
+                             'data-format': 'tsv',
+                             'author': self._author,
+                             'version': self._version,
+                             'date-published': date.today().strftime('%m-%d-%Y')}
+                dataset_id = self._provenance_utils.register_dataset(os.path.dirname(dest_path),
+                                                                     source_file=dest_path,
+                                                                     data_dict=data_dict)
+                self._generated_dataset_ids.append(dataset_id)
+
+        logger.debug('Largest network name: ' + largest_network.get_name())
         return largest_network, net_paths
+
+    def _register_hidef_output_files(self, outdir):
+        """
+        Register <HIDEF_PREFIX>.nodes and <HIDEF_PREFIX>.edges
+        and <HIDEF_PREFIX>.weaver files with FAIRSCAPE
+
+        """
+        nodesfile = os.path.join(outdir,
+                                 CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX + '.nodes')
+        edgesfile = os.path.join(outdir,
+                                 CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX + '.edges')
+        weaverfile = os.path.join(outdir,
+                                 CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX + '.weaver')
+        for hidef_file in [('nodes', 'tsv', nodesfile),
+                           ('edges', 'tsv', edgesfile),
+                           ('weaver', 'npy', weaverfile)]:
+            data_dict = {'name': os.path.basename(hidef_file[2]) +
+                         ' HiDeF output ' + hidef_file[0] + ' file',
+                         'description': ' HiDeF output ' + hidef_file[0] + ' file',
+                         'data-format': hidef_file[1],
+                         'author': self._author,
+                         'version': self._version,
+                         'date-published': date.today().strftime('%m-%d-%Y')}
+            dataset_id = self._provenance_utils.register_dataset(os.path.dirname(hidef_file[2]),
+                                                                 source_file=hidef_file[2],
+                                                                 data_dict=data_dict)
+            self._generated_dataset_ids.append(dataset_id)
 
     def get_hierarchy(self, networks):
         """
-        stability = 10
-        maxres = 40
-        alg = 'leiden'
-        input_networks = ' '.join(cutoff_files)
-        g = ' '.join(cutoff_files)
-        o = '{}/outputs_run_hidef/{}_cos_sim_layered.chi_{}.maxres_{}.alg_{}'.format(workdir,prefix, stability,maxres, alg)
+        Runs HiDeF to generate hierarchy and registers resulting output
+        files with FAIRSCAPE. To do this the method generates edgelist
+        files from the CX files corresponding to the **networks** using
+        the internal node ids for edge source and target names. These
+        files are written to the same directory as the **networks**
+        with HiDeF
+        is then given all these networks via ``--g`` flag.
 
-        %run /cellar/users/lvschaffer/GitClones/HiDeF/hidef/hidef_finder.py --g $g --o $o --alg $alg --maxres $maxres --k $stability
 
-        :return:
+
+        .. warning::
+
+            Due to FAIRSCAPE registration this method is NOT threadsafe and
+            cannot be called in parallel or with any other call that is
+            updating FAIRSCAPE registration on the current RO-CRATE
+
+        :param networks: Paths (without suffix ie .cx) to PPI networks to be
+                         used as input to HiDeF
+        :type networks: list
+        :raises CellmapsGenerateHierarchyError: If there was an error
+        :return: Resulting hierarchy or ``None`` if no hierarchy from HiDeF
+        :rtype: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
         """
         outdir = os.path.dirname(networks[0])
 
@@ -317,7 +403,7 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
 
         cmd = [self._hidef_cmd, '--g']
         cmd.extend(edgelist_files)
-        cmd.extend(['--o', os.path.join(outdir, HiDeFHierarchyGenerator.HIDEF_OUT_PREFIX),
+        cmd.extend(['--o', os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX),
                     '--alg', 'leiden', '--maxres', '40', '--k', '10',
                     '--skipgml'])
 
@@ -326,17 +412,32 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
             logger.error('Cmd failed with exit code: ' + str(exit_code) +
                          ' : ' + str(out) + ' : ' + str(err))
 
+        self._register_hidef_output_files(outdir)
+
         try:
-            cdaps_out_file = os.path.join(outdir, 'cdaps.json')
+            cdaps_out_file = os.path.join(outdir,
+                                          CDAPSHiDeFHierarchyGenerator.CDAPS_JSON_FILE)
             with open(cdaps_out_file, 'w') as out_stream:
                 self.convert_hidef_output_to_cdaps(out_stream, outdir)
+
+            # register cdaps json file with fairscape
+            data_dict = {'name': os.path.basename(cdaps_out_file) +
+                         ' CDAPS output JSON file',
+                         'description': 'CDAPS output JSON file',
+                         'data-format': 'json',
+                         'author': self._author,
+                         'version': self._version,
+                         'date-published': date.today().strftime('%m-%d-%Y')}
+            dataset_id = self._provenance_utils.register_dataset(os.path.dirname(cdaps_out_file),
+                                                                 source_file=cdaps_out_file,
+                                                                 data_dict=data_dict)
+            self._generated_dataset_ids.append(dataset_id)
 
             cd = cdapsutil.CommunityDetection(runner=cdapsutil.ExternalResultsRunner())
             return cd.run_community_detection(largest_net, algorithm=cdaps_out_file)
 
         except FileNotFoundError as fe:
             logger.error('No output from hidef: ' + str(fe) + '\n')
-            return None
         return None
 
 
