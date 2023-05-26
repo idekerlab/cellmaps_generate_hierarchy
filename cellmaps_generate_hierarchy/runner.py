@@ -269,9 +269,7 @@ class CellmapsGenerateHierarchy(object):
                 cx_path = dest_prefix + constants.CX_SUFFIX
                 generated_dataset_ids.append(self._write_and_register_ppi_network_as_cx(ppi_network,
                                                                                         dest_path=cx_path))
-                edgelist_path = dest_prefix + '.tsv'
-                generated_dataset_ids.append(self._write_and_register_ppi_network_as_edgelist(ppi_network,
-                                                                                              dest_path=edgelist_path))
+
             # generate hierarchy
             hierarchy = self._hiergen.get_hierarchy(ppi_network_prefix_paths)
 

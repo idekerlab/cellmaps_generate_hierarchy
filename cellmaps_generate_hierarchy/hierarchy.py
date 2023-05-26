@@ -137,7 +137,7 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
             cur_node_id = cluster_node_map[cluster]
         return max_node_id, cur_node_id
 
-    def update_persistence_map(persistence_node_map, node_id, persistence_val):
+    def update_persistence_map(self, persistence_node_map, node_id, persistence_val):
         """
 
         :param persistence_node_map:
@@ -272,6 +272,32 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
 
         return p.returncode, out, err
 
+    def _create_edgelist_files_for_networks(self, networks):
+        """
+        Iterates through network prefix paths and loads the
+        CX files. Method then creates a PREFIX_PATH.id.edgelist.tsv
+        file for each network and returns those paths as a list
+
+        :param networks:
+        :return:
+        """
+        net_paths = []
+        largest_network = None
+        max_edge_count = 0
+        for n in networks:
+            net = ndex2.create_nice_cx_from_file(n + constants.CX_SUFFIX)
+            dest_path = n + '.id.edgelist.tsv'
+            net_paths.append(dest_path)
+            edge_count = 0
+            with open(dest_path, 'w') as f:
+                for edge_id, edge_obj in net.get_edges():
+                    f.write(str(edge_obj['s']) + '\t' + str(edge_obj['t']) + '\n')
+                    edge_count += 1
+            if edge_count >= max_edge_count:
+                largest_network = net
+
+        return largest_network, net_paths
+
     def get_hierarchy(self, networks):
         """
         stability = 10
@@ -287,13 +313,7 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
         """
         outdir = os.path.dirname(networks[0])
 
-        largest_n_size = 0
-        largest_n = None
-        for n in networks:
-            if os.path.getsize(n + constants.CX_SUFFIX) > largest_n_size:
-                largest_n = n
-
-        edgelist_files = [n + '.tsv' for n in networks]
+        largest_net, edgelist_files = self._create_edgelist_files_for_networks(networks)
 
         cmd = [self._hidef_cmd, '--g']
         cmd.extend(edgelist_files)
@@ -312,8 +332,7 @@ class HiDeFHierarchyGenerator(CXHierarchyGenerator):
                 self.convert_hidef_output_to_cdaps(out_stream, outdir)
 
             cd = cdapsutil.CommunityDetection(runner=cdapsutil.ExternalResultsRunner())
-            # need to find the largest of the networks passed in
-            return cd.run(ndex2.create_nice_cx_from_file(largest_n + constants.CX_SUFFIX), algorithm=cdaps_out_file)
+            return cd.run_community_detection(largest_net, algorithm=cdaps_out_file)
 
         except FileNotFoundError as fe:
             logger.error('No output from hidef: ' + str(fe) + '\n')
