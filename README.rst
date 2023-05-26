@@ -28,8 +28,8 @@ Dependencies
 * `pandas <https://pypi.org/project/pandas>`__
 * `numpy <https://pypi.org/project/numpy>`__
 * `ndex2 <https://pypi.org/project/ndex2>`__
-* `HiDef <https://github.com/fanzheng10/HiDeF>`__
-   HiDef must be built directly from source which can be done by running the following commands:
+* `HiDeF <https://github.com/fanzheng10/HiDeF>`__
+   HiDeF must be built directly from source which can be done by running the following commands:
 
   .. code-block:: python
 
