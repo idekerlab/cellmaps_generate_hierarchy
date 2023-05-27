@@ -330,7 +330,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
 
                 # register edgelist file with fairscape
                 data_dict = {'name': os.path.basename(dest_path) +
-                                     ' PPI id edgelist file',
+                             ' PPI id edgelist file',
                              'description': 'PPI id edgelist file',
                              'data-format': 'tsv',
                              'author': self._author,
@@ -438,9 +438,3 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         except FileNotFoundError as fe:
             logger.error('No output from hidef: ' + str(fe) + '\n')
         return None
-
-
-
-
-
-

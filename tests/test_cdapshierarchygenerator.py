@@ -5,9 +5,12 @@
 
 import os
 import io
+from datetime import date
 import shutil
 import tempfile
 import unittest
+from unittest.mock import MagicMock
+import json
 import ndex2
 from io import StringIO
 
@@ -86,6 +89,112 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
         self.assertEqual({1: 'val',
                           2: '2val'}, persistence_map)
 
+    def test_convert_hidef_output_to_cdaps(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            shutil.copy(os.path.join(os.path.dirname(__file__), 'data', 'hidef_output.nodes'),
+                        os.path.join(temp_dir, 'hidef_output.nodes'))
+            shutil.copy(os.path.join(os.path.dirname(__file__), 'data', 'hidef_output.edges'),
+                        os.path.join(temp_dir, 'hidef_output.edges'))
+            data = ''
+            out_stream = StringIO(data)
+            gen = CDAPSHiDeFHierarchyGenerator()
+            self.assertIsNone(gen.convert_hidef_output_to_cdaps(out_stream,
+                                                                temp_dir))
+
+            res = json.loads(out_stream.getvalue())
+            self.assertEqual('77,22,c-m;77,23,c-m;77,72,c-m;77,74,c-m;77,'
+                             '75,c-m;77,76,c-m;78,72,c-m;78,74,c-m;78,75,'
+                             'c-m;78,76,c-m;77,78,c-c;', res['communityDetectionResult'])
+            self.assertEqual([{'nodes': {'HiDeF_persistence': {'d': 'integer',
+                                                               'a': 'p1',
+                                                               'v': 0}}}],
+                             res['nodeAttributesAsCX2']['attributeDeclarations'])
+            self.assertEqual([{'id': 77, 'v': {'p1': 36}},
+                              {'id': 78, 'v': {'p1': 33}}],
+                             res['nodeAttributesAsCX2']['nodes'])
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_create_edgelist_files_for_networks(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            cx_networks = []
+            one_edge_net = ndex2.nice_cx_network.NiceCXNetwork()
+            one_edge_net.set_name('one')
+            n_one = one_edge_net.create_node('n1')
+            n_two = one_edge_net.create_node('n2')
+            one_edge_net.create_edge(edge_source=n_one, edge_target=n_two)
+            one_edge_net_file = os.path.join(temp_dir, 'one_edge')
+            cx_networks.append(one_edge_net_file)
+            with open(one_edge_net_file + constants.CX_SUFFIX, 'w') as f:
+                json.dump(one_edge_net.to_cx(), f)
+
+            two_edge_net = ndex2.nice_cx_network.NiceCXNetwork()
+            two_edge_net.set_name('two')
+            n_one = two_edge_net.create_node('n3')
+            n_two = two_edge_net.create_node('n4')
+            n_three = two_edge_net.create_node('n5')
+            two_edge_net.create_edge(edge_source=n_one, edge_target=n_two)
+            two_edge_net.create_edge(edge_source=n_two, edge_target=n_three)
+            two_edge_net_file = os.path.join(temp_dir, 'two_edge')
+            cx_networks.append(two_edge_net_file)
+            with open(two_edge_net_file + constants.CX_SUFFIX, 'w') as f:
+                json.dump(two_edge_net.to_cx(), f)
+
+            mockprov = MagicMock()
+            mockprov.register_dataset = MagicMock()
+            mockprov.register_dataset.side_effect = ['XXX', 'YYY']
+            gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov,
+                                               author='author',
+                                               version='version')
+            largest_network, net_paths = gen._create_edgelist_files_for_networks(cx_networks)
+            self.assertEqual('two', largest_network.get_name())
+            self.assertEqual(2, len(net_paths))
+            self.assertTrue(one_edge_net_file +
+                            CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV in net_paths)
+            self.assertTrue(two_edge_net_file +
+                            CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV in net_paths)
+
+            with open(one_edge_net_file +
+                      CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV, 'r') as f:
+                self.assertEqual('0\t1\n', f.read())
+
+            with open(two_edge_net_file +
+                      CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV, 'r') as f:
+                self.assertEqual('0\t1\n1\t2\n', f.read())
+            self.assertEqual(2, len(gen.get_generated_dataset_ids()))
+            self.assertTrue('XXX' in gen.get_generated_dataset_ids())
+            self.assertTrue('YYY' in gen.get_generated_dataset_ids())
+
+            data_dict = {'name': os.path.basename(one_edge_net_file) +
+                                 CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV +
+                                 ' PPI id edgelist file',
+                         'description': 'PPI id edgelist file',
+                         'data-format': 'tsv',
+                         'author': 'author',
+                         'version': 'version',
+                         'date-published': date.today().strftime('%m-%d-%Y')}
+            mockprov.register_dataset.assert_any_call(temp_dir,
+                                                      source_file=one_edge_net_file +
+                                                                  CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV,
+                                                      data_dict=data_dict)
+
+            data_dict = {'name': os.path.basename(two_edge_net_file) +
+                                 CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV +
+                         ' PPI id edgelist file',
+                         'description': 'PPI id edgelist file',
+                         'data-format': 'tsv',
+                         'author': 'author',
+                         'version': 'version',
+                         'date-published': date.today().strftime('%m-%d-%Y')}
+            mockprov.register_dataset.assert_any_call(temp_dir,
+                                                      source_file=two_edge_net_file +
+                                                      CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV,
+                                                      data_dict=data_dict)
+            self.assertEqual(2, mockprov.register_dataset.call_count)
+        finally:
+            shutil.rmtree(temp_dir)
 
 
 
