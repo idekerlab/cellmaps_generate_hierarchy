@@ -15,6 +15,7 @@ import ndex2
 from io import StringIO
 
 from cellmaps_utils import constants
+import cellmaps_generate_hierarchy
 from cellmaps_generate_hierarchy.hierarchy import CDAPSHiDeFHierarchyGenerator
 from cellmaps_generate_hierarchy.hierarchy import CXHierarchyGenerator
 
@@ -193,6 +194,32 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
                                                       CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV,
                                                       data_dict=data_dict)
             self.assertEqual(2, mockprov.register_dataset.call_count)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_register_hidef_output_files(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            mockprov = MagicMock()
+            mockprov.register_dataset = MagicMock()
+            mockprov.register_dataset.side_effect = ['X', 'Y', 'Z']
+            gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov)
+            gen._register_hidef_output_files(temp_dir)
+            self.assertEqual(['X', 'Y', 'Z'], gen.get_generated_dataset_ids())
+
+            data_dict = {'name': CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX +
+                         '.nodes HiDeF output nodes file',
+                         'description': ' HiDeF output nodes file',
+                         'data-format': 'tsv',
+                         'author': 'cellmaps_generate_hierarchy',
+                         'version': cellmaps_generate_hierarchy.__version__,
+                         'date-published': date.today().strftime('%m-%d-%Y')}
+            mockprov.register_dataset.assert_any_call(temp_dir,
+                                                      source_file=os.path.join(temp_dir,
+                                                                               CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX +
+                                                                               '.nodes'),
+                                                      data_dict=data_dict)
+            self.assertEqual(3, mockprov.register_dataset.call_count)
         finally:
             shutil.rmtree(temp_dir)
 

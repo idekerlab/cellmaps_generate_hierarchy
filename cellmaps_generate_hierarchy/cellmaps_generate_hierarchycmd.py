@@ -107,7 +107,7 @@ def main(args):
         provenance = ProvenanceUtil()
         ppigen = CosineSimilarityPPIGenerator(embeddingdir=theargs.coembedding_dir)
 
-        hiergen = CDAPSHiDeFHierarchyGenerator(author=cellmaps_generate_hierarchy.__author__,
+        hiergen = CDAPSHiDeFHierarchyGenerator(author='cellmaps_generate_hierarchy',
                                                version=cellmaps_generate_hierarchy.__version__,
                                                provenance_utils=provenance)
         return CellmapsGenerateHierarchy(outdir=theargs.outdir,
