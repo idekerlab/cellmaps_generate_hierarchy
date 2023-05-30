@@ -70,7 +70,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
     PERSISTENCE_COL_NAME = 'HiDeF_persistence'
 
     def __init__(self, hidef_cmd='hidef_finder.py',
-                 provenance_utils=None,
+                 provenance_utils=ProvenanceUtil(),
                  author=None,
                  version=None):
         """

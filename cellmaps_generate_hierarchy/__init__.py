@@ -4,6 +4,6 @@
 
 __author__ = 'Clara Hu'
 __email__ = 'mhu@ucsd.edu'
-__version__ = '0.1.0a4'
+__version__ = '0.1.0a5'
 __repo_url__ = 'https://github.com/idekerlab/cellmaps_generate_hierarchy'
 __description__ = 'A tool to generate hierarchies from protein to protein interaction networks'
