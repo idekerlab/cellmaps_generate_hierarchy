@@ -82,8 +82,8 @@ def main(args):
     Version {version}
 
     Takes a coembedding file {coembedding_file} file from {coembedding_dir} directory that
-    is in TSV format and generates an interaction network
-    from which a hierarchy is derived. 
+    is in TSV format and generates several interaction networks that are fed via -g flag
+    to HiDeF to create a hierarchy.
     
     Format of {coembedding_file} where 1st line is header:
     
