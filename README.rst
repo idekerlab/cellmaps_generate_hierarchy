@@ -54,7 +54,7 @@ Installation
    git clone https://github.com/idekerlab/cellmaps_generate_hierarchy
    cd cellmaps_generate_hierarchy
    make dist
-   pip install dist/cellmaps_generate_hierarchycmd*whl
+   pip install dist/cellmaps_generate_hierarchy*whl
 
 
 Run **make** command with no arguments to see other build/deploy options including creation of Docker image 
