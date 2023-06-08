@@ -17,6 +17,7 @@ from io import StringIO
 from cellmaps_utils import constants
 import cellmaps_generate_hierarchy
 from cellmaps_generate_hierarchy.hierarchy import CDAPSHiDeFHierarchyGenerator
+from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
 from cellmaps_generate_hierarchy.hierarchy import CXHierarchyGenerator
 
 
@@ -220,6 +221,46 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
                                                                                '.nodes'),
                                                       data_dict=data_dict)
             self.assertEqual(3, mockprov.register_dataset.call_count)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_get_hierarchy_hidef_fails(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            cx_networks = []
+            one_edge_net = ndex2.nice_cx_network.NiceCXNetwork()
+            one_edge_net.set_name('one')
+            n_one = one_edge_net.create_node('n1')
+            n_two = one_edge_net.create_node('n2')
+            one_edge_net.create_edge(edge_source=n_one, edge_target=n_two)
+            one_edge_net_file = os.path.join(temp_dir, 'one_edge')
+            cx_networks.append(one_edge_net_file)
+            with open(one_edge_net_file + constants.CX_SUFFIX, 'w') as f:
+                json.dump(one_edge_net.to_cx(), f)
+
+            two_edge_net = ndex2.nice_cx_network.NiceCXNetwork()
+            two_edge_net.set_name('two')
+            n_one = two_edge_net.create_node('n3')
+            n_two = two_edge_net.create_node('n4')
+            n_three = two_edge_net.create_node('n5')
+            two_edge_net.create_edge(edge_source=n_one, edge_target=n_two)
+            two_edge_net.create_edge(edge_source=n_two, edge_target=n_three)
+            two_edge_net_file = os.path.join(temp_dir, 'two_edge')
+            cx_networks.append(two_edge_net_file)
+            with open(two_edge_net_file + constants.CX_SUFFIX, 'w') as f:
+                json.dump(two_edge_net.to_cx(), f)
+
+            mockprov = MagicMock()
+            mockprov.register_dataset = MagicMock(return_val='xxx')
+            gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov,
+                                               author='author',
+                                               version='version')
+
+            gen.get_hierarchy(cx_networks)
+            self.fail('Expected exception')
+        except CellmapsGenerateHierarchyError as e:
+            self.assertTrue('Cmd failed with exit code: 1' in str(e))
+
         finally:
             shutil.rmtree(temp_dir)
 
