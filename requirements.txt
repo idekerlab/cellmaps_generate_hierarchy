@@ -4,3 +4,4 @@ pandas
 numpy
 ndex2>=3.5.1
 cdapsutil
+hidef
