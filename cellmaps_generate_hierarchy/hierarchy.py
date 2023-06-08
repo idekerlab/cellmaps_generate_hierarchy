@@ -6,6 +6,7 @@ import subprocess
 from datetime import date
 import ndex2
 import cdapsutil
+import cellmaps_generate_hierarchy
 from cellmaps_utils import constants
 from cellmaps_utils.provenance import ProvenanceUtil
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
@@ -21,8 +22,8 @@ class CXHierarchyGenerator(object):
     """
     def __init__(self,
                  provenance_utils=ProvenanceUtil(),
-                 author=None,
-                 version=None):
+                 author='cellmaps_generate_hierarchy',
+                 version=cellmaps_generate_hierarchy.__version__):
         """
         Constructor
         """
@@ -70,9 +71,9 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
     PERSISTENCE_COL_NAME = 'HiDeF_persistence'
 
     def __init__(self, hidef_cmd='hidef_finder.py',
-                 provenance_utils=None,
-                 author=None,
-                 version=None):
+                 provenance_utils=ProvenanceUtil(),
+                 author='cellmaps_generate_hierarchy',
+                 version=cellmaps_generate_hierarchy.__version__):
         """
         Constructor
         """
@@ -333,8 +334,8 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                              ' PPI id edgelist file',
                              'description': 'PPI id edgelist file',
                              'data-format': 'tsv',
-                             'author': self._author,
-                             'version': self._version,
+                             'author': str(self._author),
+                             'version': str(self._version),
                              'date-published': date.today().strftime('%m-%d-%Y')}
                 dataset_id = self._provenance_utils.register_dataset(os.path.dirname(dest_path),
                                                                      source_file=dest_path,
@@ -350,24 +351,22 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         and <HIDEF_PREFIX>.weaver files with FAIRSCAPE
 
         """
-        nodesfile = os.path.join(outdir,
-                                 CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX + '.nodes')
-        edgesfile = os.path.join(outdir,
-                                 CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX + '.edges')
-        weaverfile = os.path.join(outdir,
-                                 CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX + '.weaver')
-        for hidef_file in [('nodes', 'tsv', nodesfile),
-                           ('edges', 'tsv', edgesfile),
-                           ('weaver', 'npy', weaverfile)]:
-            data_dict = {'name': os.path.basename(hidef_file[2]) +
+
+        for hidef_file in [('nodes', 'tsv'),
+                           ('edges', 'tsv'),
+                           ('weaver', 'npy')]:
+            outfile = os.path.join(outdir,
+                                   CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX +
+                                   '.' + hidef_file[0])
+            data_dict = {'name': os.path.basename(outfile) +
                          ' HiDeF output ' + hidef_file[0] + ' file',
                          'description': ' HiDeF output ' + hidef_file[0] + ' file',
                          'data-format': hidef_file[1],
-                         'author': self._author,
-                         'version': self._version,
+                         'author': str(self._author),
+                         'version': str(self._version),
                          'date-published': date.today().strftime('%m-%d-%Y')}
-            dataset_id = self._provenance_utils.register_dataset(os.path.dirname(hidef_file[2]),
-                                                                 source_file=hidef_file[2],
+            dataset_id = self._provenance_utils.register_dataset(os.path.dirname(outfile),
+                                                                 source_file=outfile,
                                                                  data_dict=data_dict)
             self._generated_dataset_ids.append(dataset_id)
 
@@ -424,8 +423,8 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                          ' CDAPS output JSON file',
                          'description': 'CDAPS output JSON file',
                          'data-format': 'json',
-                         'author': self._author,
-                         'version': self._version,
+                         'author': str(self._author),
+                         'version': str(self._version),
                          'date-published': date.today().strftime('%m-%d-%Y')}
             dataset_id = self._provenance_utils.register_dataset(os.path.dirname(cdaps_out_file),
                                                                  source_file=cdaps_out_file,

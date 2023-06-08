@@ -82,8 +82,8 @@ def main(args):
     Version {version}
 
     Takes a coembedding file {coembedding_file} file from {coembedding_dir} directory that
-    is in TSV format and generates an interaction network
-    from which a hierarchy is derived. 
+    is in TSV format and generates several interaction networks that are fed via -g flag
+    to HiDeF to create a hierarchy.
     
     Format of {coembedding_file} where 1st line is header:
     
@@ -107,7 +107,7 @@ def main(args):
         provenance = ProvenanceUtil()
         ppigen = CosineSimilarityPPIGenerator(embeddingdir=theargs.coembedding_dir)
 
-        hiergen = CDAPSHiDeFHierarchyGenerator(author=cellmaps_generate_hierarchy.__author__,
+        hiergen = CDAPSHiDeFHierarchyGenerator(author='cellmaps_generate_hierarchy',
                                                version=cellmaps_generate_hierarchy.__version__,
                                                provenance_utils=provenance)
         return CellmapsGenerateHierarchy(outdir=theargs.outdir,
