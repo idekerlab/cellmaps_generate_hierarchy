@@ -403,7 +403,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         cmd = [self._hidef_cmd, '--g']
         cmd.extend(edgelist_files)
         cmd.extend(['--o', os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX),
-                    '--alg', 'leiden', '--maxres', '40', '--k', '10',
+                    '--alg', 'leiden', '--maxres', '80', '--k', '10',
                     '--skipgml'])
 
         exit_code, out, err = self._run_cmd(cmd)
