@@ -1,5 +1,6 @@
 
 import os
+import sys
 import csv
 import logging
 import subprocess
@@ -75,12 +76,22 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                  author='cellmaps_generate_hierarchy',
                  version=cellmaps_generate_hierarchy.__version__):
         """
-        Constructor
+
+        :param hidef_cmd: HiDeF command line binary
+        :type hidef_cmd: str
+        :param provenance_utils:
+        :param author:
+        :type author: str
+        :param version:
         """
         super().__init__(provenance_utils=provenance_utils,
                          author=author,
                          version=version)
-        self._hidef_cmd = hidef_cmd
+        self._python = sys.executable
+        if os.sep not in hidef_cmd:
+            self._hidef_cmd = os.path.join(os.path.dirname(self._python), hidef_cmd)
+        else:
+            self._hidef_cmd = hidef_cmd
 
     def _get_max_node_id(self, nodes_file):
         """
@@ -399,16 +410,19 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
 
         largest_net, edgelist_files = self._create_edgelist_files_for_networks(networks)
 
-        cmd = [self._hidef_cmd, '--g']
+        cmd = [self._python, self._hidef_cmd, '--g']
         cmd.extend(edgelist_files)
         cmd.extend(['--o', os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX),
                     '--alg', 'leiden', '--maxres', '80', '--k', '10',
                     '--skipgml'])
 
         exit_code, out, err = self._run_cmd(cmd)
+
         if exit_code != 0:
             logger.error('Cmd failed with exit code: ' + str(exit_code) +
                          ' : ' + str(out) + ' : ' + str(err))
+            raise CellmapsGenerateHierarchyError('Cmd failed with exit code: ' + str(exit_code) +
+                                                 ' : ' + str(out) + ' : ' + str(err))
 
         self._register_hidef_output_files(outdir)
 
