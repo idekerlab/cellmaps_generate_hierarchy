@@ -282,7 +282,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         out_stream.write('\n')
         return None
 
-    def _run_cmd(self, cmd, cwd=None, timeout=3600):
+    def _run_cmd(self, cmd, cwd=None, timeout=36000):
         """
         Runs command as a command line process
 
