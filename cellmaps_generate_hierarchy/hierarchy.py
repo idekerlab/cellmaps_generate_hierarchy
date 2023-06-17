@@ -5,6 +5,7 @@ import csv
 import logging
 import subprocess
 from datetime import date
+import shutil
 import ndex2
 import cdapsutil
 import cellmaps_generate_hierarchy
@@ -13,6 +14,57 @@ from cellmaps_utils.provenance import ProvenanceUtil
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
 
 logger = logging.getLogger(__name__)
+
+
+class IDToNameHiDeFTranslator(object):
+    """
+    Translates node ids in HiDeF output
+    files to gene names
+    """
+    def __init__(self, network=None):
+        """
+        Constructor
+        """
+        self._network = network
+
+    def _get_network_id_to_name_map(self):
+        """
+        Gets id to node name map of network
+        :return:
+        """
+        id_map = {}
+        for node_id, node_obj in self._network.get_nodes():
+            id_map[node_id] = node_obj['n']
+        return id_map
+
+    def translate_hidef_output(self, hidef_nodes=None,
+                               hidef_edges=None,
+                               dest_prefix=None):
+        """
+        Translates
+        :param hidef_nodes: Path to HiDeF nodes file
+        :param hidef_edges: Path to HiDeF edges file
+        :param dest_prefix:
+        :return:
+        """
+        id_map = self._get_network_id_to_name_map()
+        with open(dest_prefix + '.nodes', 'w', newline='') as f:
+            writer = csv.writer(f, delimiter='\t')
+            with open(hidef_nodes, 'r') as csvfile:
+                linereader = csv.reader(csvfile, delimiter='\t')
+                for row in linereader:
+                    named_nodes = []
+                    for node in row[2].split(' '):
+                        named_nodes.append(id_map[int(node)])
+                    new_row = row[0:2]
+                    new_row.append(' '.join(named_nodes))
+                    if len(row) >= 4:
+                        new_row.extend(row[3:])
+                    writer.writerow(new_row)
+        dest_edges_file = dest_prefix + '.edges'
+        logger.debug('Copying ' + hidef_edges + ' to ' + dest_edges_file)
+        shutil.copy(hidef_edges, dest_edges_file)
+
 
 
 class CXHierarchyGenerator(object):
