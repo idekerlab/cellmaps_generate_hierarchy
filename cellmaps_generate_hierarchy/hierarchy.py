@@ -21,11 +21,17 @@ class IDToNameHiDeFTranslator(object):
     Translates node ids in HiDeF output
     files to gene names
     """
-    def __init__(self, network=None):
+    def __init__(self, network=None,
+                 provenance_utils=ProvenanceUtil(),
+                 author='cellmaps_generate_hierarchy',
+                 version=cellmaps_generate_hierarchy.__version__):
         """
         Constructor
         """
         self._network = network
+        self._author = author
+        self._version = version
+        self._provenance_utils = provenance_utils
 
     def _get_network_id_to_name_map(self):
         """
@@ -42,13 +48,17 @@ class IDToNameHiDeFTranslator(object):
                                dest_prefix=None):
         """
         Translates
+
         :param hidef_nodes: Path to HiDeF nodes file
         :param hidef_edges: Path to HiDeF edges file
         :param dest_prefix:
-        :return:
+        :return: FAIRSCAPE dataset ids for the .nodes and .edges files
+                 created by this call
+        :rtype: list
         """
         id_map = self._get_network_id_to_name_map()
-        with open(dest_prefix + '.nodes', 'w', newline='') as f:
+        dest_nodes_file = dest_prefix + '.nodes'
+        with open(dest_nodes_file, 'w', newline='') as f:
             writer = csv.writer(f, delimiter='\t')
             with open(hidef_nodes, 'r') as csvfile:
                 linereader = csv.reader(csvfile, delimiter='\t')
@@ -64,7 +74,30 @@ class IDToNameHiDeFTranslator(object):
         dest_edges_file = dest_prefix + '.edges'
         logger.debug('Copying ' + hidef_edges + ' to ' + dest_edges_file)
         shutil.copy(hidef_edges, dest_edges_file)
+        return self._register_hidef_output_files(hidef_files=[dest_edges_file,
+                                                              dest_nodes_file])
 
+    def _register_hidef_output_files(self, hidef_files=None):
+        """
+        Register <HIDEF_PREFIX>.nodes and <HIDEF_PREFIX>.edges
+        and <HIDEF_PREFIX>.weaver files with FAIRSCAPE
+
+        """
+        dataset_ids = []
+        for hidef_file in hidef_files:
+            suffix = hidef_file[hidef_file.rindex('.')+1:]
+            data_dict = {'name': os.path.basename(hidef_file) +
+                         ' HiDeF output ' + suffix + ' file where node ids converted to gene names',
+                         'description': ' HiDeF output ' + suffix + ' file',
+                         'data-format': 'tsv',
+                         'author': str(self._author),
+                         'version': str(self._version),
+                         'date-published': date.today().strftime('%m-%d-%Y')}
+            dataset_id = self._provenance_utils.register_dataset(os.path.dirname(hidef_file),
+                                                                 source_file=hidef_file,
+                                                                 data_dict=data_dict)
+            dataset_ids.append(dataset_id)
+        return dataset_ids
 
 
 class CXHierarchyGenerator(object):
