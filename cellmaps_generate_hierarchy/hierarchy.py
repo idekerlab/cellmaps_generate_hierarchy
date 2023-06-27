@@ -21,33 +21,44 @@ class IDToNameHiDeFTranslator(object):
     Translates node ids in HiDeF output
     files to gene names
     """
-    def __init__(self, network=None):
+    def __init__(self):
         """
         Constructor
-        """
-        self._network = network
 
-    def _get_network_id_to_name_map(self):
+        """
+        pass
+
+    def _get_network_id_to_name_map(self, network):
         """
         Gets id to node name map of network
-        :return:
+
+        :return: id => node name dict
+        :rtype: dict
         """
         id_map = {}
-        for node_id, node_obj in self._network.get_nodes():
+        for node_id, node_obj in network.get_nodes():
             id_map[node_id] = node_obj['n']
         return id_map
 
-    def translate_hidef_output(self, hidef_nodes=None,
+    def translate_hidef_output(self, network=None, hidef_nodes=None,
                                hidef_edges=None,
                                dest_prefix=None):
         """
-        Translates
+        Translates hidef output ids to node names found in
+        network set via constructor. The updated outputs are
+        saved as files with **dest_prefix** and ``.nodes|.edges``
+        suffixes.
+
+        :param network: Network used to map ids in HiDeF output
+                        to node names
+        :type network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
         :param hidef_nodes: Path to HiDeF nodes file
         :param hidef_edges: Path to HiDeF edges file
-        :param dest_prefix:
+        :param dest_prefix: Prefix path to save new HiDeF nodes/edges files
+        :type dest_prefix: str
         :return:
         """
-        id_map = self._get_network_id_to_name_map()
+        id_map = self._get_network_id_to_name_map(network)
         with open(dest_prefix + '.nodes', 'w', newline='') as f:
             writer = csv.writer(f, delimiter='\t')
             with open(hidef_nodes, 'r') as csvfile:
@@ -64,7 +75,6 @@ class IDToNameHiDeFTranslator(object):
         dest_edges_file = dest_prefix + '.edges'
         logger.debug('Copying ' + hidef_edges + ' to ' + dest_edges_file)
         shutil.copy(hidef_edges, dest_edges_file)
-
 
 
 class CXHierarchyGenerator(object):
@@ -115,6 +125,8 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
 
     HIDEF_OUT_PREFIX = 'hidef_output'
 
+    TRANSLATED_HIDEF_OUT_PREFIX = 'hidefnames_output'
+
     CDRES_KEY_NAME = 'communityDetectionResult'
 
     NODE_CX_KEY_NAME = 'nodeAttributesAsCX2'
@@ -125,6 +137,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
 
     def __init__(self, hidef_cmd='hidef_finder.py',
                  provenance_utils=ProvenanceUtil(),
+                 idtranslator=IDToNameHiDeFTranslator(),
                  author='cellmaps_generate_hierarchy',
                  version=cellmaps_generate_hierarchy.__version__):
         """
@@ -139,6 +152,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         super().__init__(provenance_utils=provenance_utils,
                          author=author,
                          version=version)
+        self._idtranslator = idtranslator
         self._python = sys.executable
         if os.sep not in hidef_cmd:
             self._hidef_cmd = os.path.join(os.path.dirname(self._python), hidef_cmd)
@@ -497,6 +511,21 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                                                                  data_dict=data_dict)
             self._generated_dataset_ids.append(dataset_id)
 
+
+            if self._idtranslator is not None:
+                hidef_nodes = os.path.join(outdir,
+                                           CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX +
+                                           '.nodes')
+                hidef_edges = os.path.join(outdir,
+                                           CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX +
+                                           '.edges')
+
+                dest_prefix = os.path.join(outdir,
+                                           CDAPSHiDeFHierarchyGenerator.TRANSLATED_HIDEF_OUT_PREFIX)
+                self._idtranslator.translate_hidef_output(network=largest_net,
+                                                          hidef_nodes=hidef_nodes,
+                                                          hidef_edges=hidef_edges,
+                                                          dest_prefix=dest_prefix)
             cd = cdapsutil.CommunityDetection(runner=cdapsutil.ExternalResultsRunner())
             return cd.run_community_detection(largest_net, algorithm=cdaps_out_file)
 

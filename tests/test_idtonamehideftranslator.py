@@ -66,8 +66,9 @@ class TestIDToNameHiDeFTranslator(unittest.TestCase):
                 writer = csv.writer(f, delimiter='\t')
                 writer.writerow(['cluster1-0', 'cluster1-1', 'default'])
 
-            translator = IDToNameHiDeFTranslator(network=net)
-            translator.translate_hidef_output(hidef_nodes=nodes_file,
+            translator = IDToNameHiDeFTranslator()
+            translator.translate_hidef_output(network=net,
+                                              hidef_nodes=nodes_file,
                                               hidef_edges=edges_file,
                                               dest_prefix=os.path.join(temp_dir, 'result'))
 
