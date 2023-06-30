@@ -70,9 +70,9 @@ class TestIDToNameHiDeFTranslator(unittest.TestCase):
             mockprov.register_dataset = MagicMock()
             mockprov.register_dataset.side_effect = ['1', '2']
 
-            translator = IDToNameHiDeFTranslator(network=net,
-                                                 provenance_utils=mockprov)
-            res = translator.translate_hidef_output(hidef_nodes=nodes_file,
+            translator = IDToNameHiDeFTranslator(provenance_utils=mockprov)
+            res = translator.translate_hidef_output(network=net,
+                                                    hidef_nodes=nodes_file,
                                                     hidef_edges=edges_file,
                                                     dest_prefix=os.path.join(temp_dir, 'result'))
             self.assertEqual(['1', '2'], res)
