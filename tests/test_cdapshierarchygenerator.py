@@ -134,8 +134,8 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
 
             two_edge_net = ndex2.nice_cx_network.NiceCXNetwork()
             two_edge_net.set_name('two')
-            n_one = two_edge_net.create_node('n3')
-            n_two = two_edge_net.create_node('n4')
+            n_one = two_edge_net.create_node('n1')
+            n_two = two_edge_net.create_node('n2')
             n_three = two_edge_net.create_node('n5')
             two_edge_net.create_edge(edge_source=n_one, edge_target=n_two)
             two_edge_net.create_edge(edge_source=n_two, edge_target=n_three)
@@ -240,8 +240,8 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
 
             two_edge_net = ndex2.nice_cx_network.NiceCXNetwork()
             two_edge_net.set_name('two')
-            n_one = two_edge_net.create_node('n3')
-            n_two = two_edge_net.create_node('n4')
+            n_one = two_edge_net.create_node('n1')
+            n_two = two_edge_net.create_node('n2')
             n_three = two_edge_net.create_node('n5')
             two_edge_net.create_edge(edge_source=n_one, edge_target=n_two)
             two_edge_net.create_edge(edge_source=n_two, edge_target=n_three)

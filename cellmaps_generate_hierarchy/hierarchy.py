@@ -394,6 +394,46 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
 
         return p.returncode, out, err
 
+    def _get_largest_network(self, networks):
+        """
+        Finds largest network by file size
+
+        :param networks: list of :py:class:`~ndex2.nice_cx_network.NiceCXNetwork` objects
+        :type networks: list
+        :return: Largest network
+        :rtype: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        """
+        largest_network = None
+        max_file_size = 0
+        for n in networks:
+            file_size = os.path.getsize(n + constants.CX_SUFFIX)
+            if file_size >= max_file_size:
+                largest_network = n
+                max_file_size = file_size
+        return largest_network
+
+    def _get_name_to_id_dict(self, network):
+        """
+
+        :param network:
+        :return:
+        """
+        name_to_id = {}
+        for node_id, node_obj in network.get_nodes():
+            name_to_id[node_obj['n']] = node_id
+        return name_to_id
+
+    def _get_id_to_name_dict(self, network):
+        """
+
+        :param network:
+        :return:
+        """
+        id_to_name = {}
+        for node_id, node_obj in network.get_nodes():
+            id_to_name[node_id] = node_obj['n']
+        return id_to_name
+
     def _create_edgelist_files_for_networks(self, networks):
         """
         Iterates through **networks** prefix paths and loads the
@@ -407,23 +447,29 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         :rtype: tuple
         """
         net_paths = []
-        largest_network = None
-        max_edge_count = 0
+
+        largest_network_path = self._get_largest_network(networks)
+        largest_network = ndex2.create_nice_cx_from_file(largest_network_path + constants.CX_SUFFIX)
+        logger.debug('Largest network name: ' + largest_network.get_name())
+        largest_name_to_id = self._get_name_to_id_dict(largest_network)
+
         for n in networks:
-            logger.debug('Creating NiceCXNetwork object from: ' + n + constants.CX_SUFFIX)
-            net = ndex2.create_nice_cx_from_file(n + constants.CX_SUFFIX)
+            if largest_network_path == n:
+                net = largest_network
+            else:
+                logger.debug('Creating NiceCXNetwork object from: ' + n + constants.CX_SUFFIX)
+                net = ndex2.create_nice_cx_from_file(n + constants.CX_SUFFIX)
             dest_path = n + CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV
             net_paths.append(dest_path)
-            edge_count = 0
             logger.debug('Writing out id edgelist: ' + str(dest_path))
+            id_to_name = self._get_id_to_name_dict(net)
+            print('XXXX' + str(id_to_name))
             with open(dest_path, 'w') as f:
                 for edge_id, edge_obj in net.get_edges():
-                    f.write(str(edge_obj['s']) + '\t' + str(edge_obj['t']) + '\n')
-                    edge_count += 1
-
-            # find the largest network by edge count
-            if edge_count >= max_edge_count:
-                largest_network = net
+                    f.write(str(largest_name_to_id[id_to_name[edge_obj['s']]]) +
+                            '\t' +
+                            str(largest_name_to_id[id_to_name[edge_obj['t']]]) +
+                            '\n')
 
                 # register edgelist file with fairscape
                 data_dict = {'name': os.path.basename(dest_path) +
