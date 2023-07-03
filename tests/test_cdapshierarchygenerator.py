@@ -95,9 +95,9 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             shutil.copy(os.path.join(os.path.dirname(__file__), 'data', 'hidef_output.nodes'),
-                        os.path.join(temp_dir, 'hidef_output.nodes'))
+                        os.path.join(temp_dir, 'hidef_output.pruned.nodes'))
             shutil.copy(os.path.join(os.path.dirname(__file__), 'data', 'hidef_output.edges'),
-                        os.path.join(temp_dir, 'hidef_output.edges'))
+                        os.path.join(temp_dir, 'hidef_output.pruned.edges'))
             data = ''
             out_stream = StringIO(data)
             gen = CDAPSHiDeFHierarchyGenerator()

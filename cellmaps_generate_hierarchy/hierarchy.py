@@ -11,6 +11,7 @@ import cdapsutil
 import cellmaps_generate_hierarchy
 from cellmaps_utils import constants
 from cellmaps_utils.provenance import ProvenanceUtil
+from cellmaps_generate_hierarchy.maturehierarchy import HiDeFHierarchyRefiner
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
 
 logger = logging.getLogger(__name__)
@@ -168,7 +169,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
 
     def __init__(self, hidef_cmd='hidef_finder.py',
                  provenance_utils=ProvenanceUtil(),
-                 idtranslator=IDToNameHiDeFTranslator(),
+                 refiner=None,
                  author='cellmaps_generate_hierarchy',
                  version=cellmaps_generate_hierarchy.__version__):
         """
@@ -183,7 +184,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         super().__init__(provenance_utils=provenance_utils,
                          author=author,
                          version=version)
-        self._idtranslator = idtranslator
+        self._refiner = refiner
         self._python = sys.executable
         if os.sep not in hidef_cmd:
             self._hidef_cmd = os.path.join(os.path.dirname(self._python), hidef_cmd)
@@ -359,7 +360,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         """
         nodefile = os.path.join(outdir,
                                 CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX +
-                                '.nodes')
+                                '.pruned.nodes')
         max_node_id = self._get_max_node_id(nodefile)
         cluster_node_map = {}
         persistence_map = {}
@@ -373,7 +374,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                 self.update_persistence_map(persistence_map, cur_node_id, row[-1])
                 self.write_members_for_row(out_stream, row,
                                       cur_node_id)
-        edge_file = os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX + '.edges')
+        edge_file = os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX + '.pruned.edges')
         self.write_communities(out_stream, edge_file, cluster_node_map)
         self.write_persistence_node_attribute(out_stream, persistence_map)
         out_stream.write('\n')
@@ -554,7 +555,8 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
 
         cmd = [self._python, self._hidef_cmd, '--g']
         cmd.extend(edgelist_files)
-        cmd.extend(['--o', os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX),
+        outputprefix = os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX)
+        cmd.extend(['--o', outputprefix,
                     '--alg', 'leiden', '--maxres', '80', '--k', '10',
                     '--skipgml'])
 
@@ -569,6 +571,9 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         self._register_hidef_output_files(outdir)
 
         try:
+            if self._refiner is not None:
+                self._refiner.refine_hierarchy(outprefix=outputprefix)
+
             cdaps_out_file = os.path.join(outdir,
                                           CDAPSHiDeFHierarchyGenerator.CDAPS_JSON_FILE)
             with open(cdaps_out_file, 'w') as out_stream:
@@ -586,22 +591,6 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                                                                  source_file=cdaps_out_file,
                                                                  data_dict=data_dict)
             self._generated_dataset_ids.append(dataset_id)
-
-            if self._idtranslator is not None:
-                hidef_nodes = os.path.join(outdir,
-                                           CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX +
-                                           '.nodes')
-                hidef_edges = os.path.join(outdir,
-                                           CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX +
-                                           '.edges')
-
-                dest_prefix = os.path.join(outdir,
-                                           CDAPSHiDeFHierarchyGenerator.TRANSLATED_HIDEF_OUT_PREFIX)
-                dset_ids = self._idtranslator.translate_hidef_output(network=largest_net,
-                                                                     hidef_nodes=hidef_nodes,
-                                                                     hidef_edges=hidef_edges,
-                                                                     dest_prefix=dest_prefix)
-                self.get_generated_dataset_ids.extend(dset_ids)
 
             cd = cdapsutil.CommunityDetection(runner=cdapsutil.ExternalResultsRunner())
             return cd.run_community_detection(largest_net, algorithm=cdaps_out_file)
