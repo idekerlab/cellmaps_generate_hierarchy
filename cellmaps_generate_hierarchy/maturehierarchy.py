@@ -1,6 +1,5 @@
 import pandas as pd
 
-import os
 import networkx as nx
 import logging
 
@@ -203,7 +202,7 @@ class HiDeFHierarchyRefiner(object):
         """
         gene_rows_to_add = []
         parent_to_child = edge_table.groupby(HiDeFHierarchyRefiner.PARENT_COL)[HiDeFHierarchyRefiner.CHILD_COL].apply(list)  # group the parents
-        for parent, children in parent_to_child.iteritems():
+        for parent, children in parent_to_child.items():
             parent_genes = self._get_genes_from_node_table_for_term(node_table, parent)
             child_genes = []
             for child in children:
@@ -251,7 +250,7 @@ class HiDeFHierarchyRefiner(object):
         add_rows = pd.DataFrame(gene_rows_to_add, columns=[HiDeFHierarchyRefiner.PARENT_COL,
                                                            HiDeFHierarchyRefiner.CHILD_COL,
                                                            HiDeFHierarchyRefiner.TYPE_COL])
-        final_df = edge_table_filtered.append(add_rows)
+        final_df = pd.concat([edge_table_filtered, add_rows])
         logger.debug(' Size of final table: ' + str(len(final_df)))
         return final_df
 
@@ -340,7 +339,6 @@ class HiDeFHierarchyRefiner(object):
             b = set(b)
         return len(a.intersection(b)) / len(a.union(b))
 
-    @staticmethod
     def _clean_shortcut(self, nx_graph):
         # TODO: Finish implementing this
         edge_df = self._to_pandas_dataframe(nx_graph)
@@ -354,9 +352,7 @@ class HiDeFHierarchyRefiner(object):
                                      row[HiDeFHierarchyRefiner.CHILD_COL])
                 logger.debug('shortcut edges is removed between {} and {}'.format(row[HiDeFHierarchyRefiner.PARENT_COL],
                                                                                   row[HiDeFHierarchyRefiner.CHILD_COL]))
-        return
 
-    @staticmethod
     def _reorganize(self, nx_graph, hiergeneset, ci_thre): # Add an edge if the nodes have containment index >=threshold
         # TODO: Finish implementing this
         iterate = True
@@ -377,9 +373,9 @@ class HiDeFHierarchyRefiner(object):
                         continue
                     tmp_comp_geneset = set(tmp_row['genes'])
                     # Check if satisfy ci_thre
-                    if len(comp_geneset.intersection(tmp_comp_geneset))/tmp_row['tsize'] >= ci_thre: #intersection of two components divided by the term size of the smaller component
+                    # intersection of two components divided by the term size of the smaller component
+                    if len(comp_geneset.intersection(tmp_comp_geneset))/tmp_row['tsize'] >= ci_thre:
                         # Check if child having higher weight than parent
-                        # if cluster_weight[comp] < cluster_weight[tmp_comp]: ## do not have weight in hidef
                         logger.debug('{} is contained in {} with a CI bigger than threshold, add edge between'.format(tmp_comp, comp))
                         nx_graph.add_edge(comp, tmp_comp, type='default')
                         clear = False
@@ -472,24 +468,19 @@ class HiDeFHierarchyRefiner(object):
             # Remove target node
             nx_graph.remove_node(deleteSys)
 
-    def refine_hierarchy(self, outprefix=None,
-                         align_ont_path=None):
+    def refine_hierarchy(self, outprefix=None):
         """
-        # TODO: Finish implementing this
+        Removes highly similar systems and dumps out a new HiDeF formatted
+        .nodes and .edges file with .pruned.nodes and .pruned.edges suffixes
 
         :param outprefix: output_dir/file_prefix for the output file
-        :param ci_thre: Containment index threshold
-        :param ji_thre: Jaccard index threshold for merging similar clusters
-        :param min_system_size: Minimum number of proteins requiring each system to have
-        :param min_diff: Minimum difference in number of proteins for every parent-child pair
-        :param align_ont_path: Full path to alignOntology
-        :return:
+        :type outprefix: str
         """
         logger.debug('Containment index threshold: ' + str(self._ci_thre))
         logger.debug('Jaccard index threshold: ' + str(self._ji_thre))
 
         # Read node table
-        node_table = self._get_node_table_from_hidef(outprefix,
+        node_table = self._get_node_table_from_hidef(outprefix +
                                                      HiDeFHierarchyRefiner.NODES_SUFFIX)
 
         # Read edge table
@@ -502,8 +493,8 @@ class HiDeFHierarchyRefiner(object):
         nx_graph = nx.from_pandas_edgelist(ont,
                                            source=HiDeFHierarchyRefiner.PARENT_COL,
                                            target=HiDeFHierarchyRefiner.CHILD_COL,
-                                    edge_attr=HiDeFHierarchyRefiner.TYPE_COL,
-                                    create_using=nx.DiGraph())
+                                           edge_attr=HiDeFHierarchyRefiner.TYPE_COL,
+                                           create_using=nx.DiGraph())
 
         if not nx.is_directed_acyclic_graph(nx_graph):
             raise ValueError('Input hierarchy is not DAG!')
@@ -517,32 +508,48 @@ class HiDeFHierarchyRefiner(object):
         self._collapse_redundant(nx_graph, hiergeneset, self._min_diff)
         # Output as ddot edge file
         self._clean_shortcut(nx_graph)
+
         edge_df = self._to_pandas_dataframe(nx_graph)
-        edge_df.to_csv('{}.pruned.ont'.format(outprefix), header=False, index=False, sep='\t')
 
-        # TODO: Replace ontologyTermStats with native python code
-        run_termStats = '{}/ontologyTermStats {} genes > {}'.format(align_ont_path,
-                                                          '{}.pruned.ont'.format(outprefix),
-                                                          '{}.pruned.nodes'.format(outprefix))
-        os.system(run_termStats)
+        # we need to recreate .nodes file in HiDeF format
+        # so create nodes dataframe which has this mapping of
+        # all genes for a given cluster (including genes attached to children)
+        nodes = self._get_term_stats(nx_graph, hiergeneset)
+        logger.debug(nodes.head())
 
-        ## step to clean the termStats file and make it the same format as hidef output
-        nodes = pd.read_csv(outprefix+'.pruned.nodes', sep = '\t', header = None)
-        nodes.columns = ['terms', 'Size', 'MemberList']
-        original_nodes = pd.read_csv(outprefix + '.nodes', sep = '\t', header = None)
-        nodes['Stability'] = original_nodes.loc[nodes.index.values, 3]
-        nodes = nodes.set_index('terms')
-        cleaned= []
+        # get rid of the descendent column
+        nodes.drop(['descendent'], axis=1, inplace=True)
+
+        # the genes are in a list, but we need them space delimited so
+        # in place replace the 'genes' column
+        cleaned = []
         for i, rows in nodes.iterrows():
-            genes = [g for g in rows['MemberList'].split(',') if len(g) > 1]
+            if isinstance(rows['genes'], list):
+                genes = rows['genes']
+            else:
+                genes = [g for g in rows['genes'].split(',') if len(g) > 1]
             cleaned.append(' '.join(genes))
-        nodes['MemberList'] = cleaned
-        nodes.sort_values(by='Size', ascending=False, inplace=True)
-        nodes.to_csv(outprefix+'.pruned.nodes', header=False, sep='\t')
+        nodes['genes'] = cleaned
 
+        # dont think this is needed
+        # node_table.set_index(HiDeFHierarchyRefiner.TERMS_COL)
+
+        # create a map of cluster name to stability values
+        cluster_stability = pd.Series(node_table[HiDeFHierarchyRefiner.STABILITY_COL].values,
+                                      index=node_table.terms).to_dict()
+
+        # use the cluster_stability map to add stability values to nodes dataframe by
+        # matching with the cluster name in the nodes (it is the index)
+        nodes[HiDeFHierarchyRefiner.STABILITY_COL] = nodes.index.map(cluster_stability)
+
+        # sort the nodes table by term size
+        nodes.sort_values(by='tsize', ascending=False, inplace=True)
+
+        # dump out new nodes file in HiDeF format
+        nodes.to_csv(outprefix + '.pruned.nodes', header=False, sep='\t')
+
+        # dump out HiDeF edges file
         edges = edge_df.loc[edge_df['type'] == 'default', :]
         edges.to_csv(outprefix+'.pruned.edges', sep='\t', header=None,index=None)
 
         logger.debug('Number of edges is ' + str(len(edges)) + ', number of nodes are ' + str(len(nodes)))
-
-

@@ -116,5 +116,3 @@ class TestMatureHierarchy(unittest.TestCase):
         self.assertTrue(['two', 'gened', HiDeFHierarchyRefiner.GENE_TYPE] in res)
         self.assertTrue(['two', 'genee', HiDeFHierarchyRefiner.GENE_TYPE] in res)
         self.assertTrue(['two', 'genef', HiDeFHierarchyRefiner.GENE_TYPE] in res)
-
-
