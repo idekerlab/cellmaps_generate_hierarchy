@@ -59,7 +59,7 @@ class TestMatureHierarchy(unittest.TestCase):
 
             edge_table = HiDeFHierarchyRefiner._get_edge_table_from_hidef(edges_file)
             self.assertEqual(3, len(edge_table))
-            self.assertEquals({'Cluster1-43',
+            self.assertEqual({'Cluster1-43',
                                'Cluster1-51',
                                'Cluster1-66'}, set(edge_table[HiDeFHierarchyRefiner.PARENT_COL].values))
 
