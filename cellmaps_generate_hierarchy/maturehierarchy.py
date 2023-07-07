@@ -545,6 +545,8 @@ class HiDeFHierarchyRefiner(object):
         # sort the nodes table by term size
         nodes.sort_values(by='tsize', ascending=False, inplace=True)
 
+        # Todo: Register .pruned.nodes and .pruned.edges with fairscape
+
         # dump out new nodes file in HiDeF format
         nodes.to_csv(outprefix + '.pruned.nodes', header=False, sep='\t')
 
