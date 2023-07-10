@@ -129,7 +129,8 @@ def main(args):
         refiner = HiDeFHierarchyRefiner(ci_thre=theargs.containment_threshold,
                                         ji_thre=theargs.jaccard_threshold,
                                         min_term_size=theargs.min_system_size,
-                                        min_diff=theargs.min_diff)
+                                        min_diff=theargs.min_diff,
+                                        provenance_utils=provenance)
 
         hiergen = CDAPSHiDeFHierarchyGenerator(author='cellmaps_generate_hierarchy',
                                                refiner=refiner,
