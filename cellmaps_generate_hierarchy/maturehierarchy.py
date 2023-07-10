@@ -1,7 +1,13 @@
+
+import os
+from datetime import date
 import pandas as pd
 
 import networkx as nx
 import logging
+import cellmaps_generate_hierarchy
+from cellmaps_utils import constants
+from cellmaps_utils.provenance import ProvenanceUtil
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +38,10 @@ class HiDeFHierarchyRefiner(object):
                  ci_thre=0.75,
                  ji_thre=0.9,
                  min_term_size=4,
-                 min_diff=1):
+                 min_diff=1,
+                 provenance_utils=ProvenanceUtil(),
+                 author='cellmaps_generate_hierarchy',
+                 version=cellmaps_generate_hierarchy.__version__):
         """
         Constructor
 
@@ -45,6 +54,9 @@ class HiDeFHierarchyRefiner(object):
         self._ji_thre = ji_thre
         self._min_term_size = min_term_size
         self._min_diff = min_diff
+        self._provenance_utils = provenance_utils
+        self._author = author
+        self._version = version
 
     @staticmethod
     def _get_node_table_from_hidef(nodes_file):
@@ -468,6 +480,31 @@ class HiDeFHierarchyRefiner(object):
             # Remove target node
             nx_graph.remove_node(deleteSys)
 
+    def _register_pruned_hidef_output_files(self, outprefix):
+        """
+        Register <outprefix>.nodes and <outprefix.edges> pruned
+        HiDeF output files with FAIRSCAPE
+
+        :param outprefix:
+        :type outprefix: str
+        :return: dataset ids
+        :rtype: list
+        """
+        d_sets = []
+        for hidef_file in ['nodes', 'edges']:
+            outfile = outprefix + '.' + hidef_file
+            data_dict = {'name': os.path.basename(outfile) +
+                         ' Pruned HiDeF output ' + hidef_file[0] + ' file',
+                         'description': ' Pruned HiDeF output ' + hidef_file[0] + ' file',
+                         'data-format': 'tsv',
+                         'author': str(self._author),
+                         'version': str(self._version),
+                         'date-published': date.today().strftime('%m-%d-%Y')}
+            d_sets.append(self._provenance_utils.register_dataset(os.path.dirname(outfile),
+                                                                  source_file=outfile,
+                                                                  data_dict=data_dict))
+        return d_sets
+
     def refine_hierarchy(self, outprefix=None):
         """
         Removes highly similar systems and dumps out a new HiDeF formatted
@@ -475,6 +512,8 @@ class HiDeFHierarchyRefiner(object):
 
         :param outprefix: output_dir/file_prefix for the output file
         :type outprefix: str
+        :return: dataset ids of .pruned.nodes and .pruned.edges file generated
+        :rtype: list
         """
         logger.debug('Containment index threshold: ' + str(self._ci_thre))
         logger.debug('Jaccard index threshold: ' + str(self._ji_thre))
@@ -555,3 +594,4 @@ class HiDeFHierarchyRefiner(object):
         edges.to_csv(outprefix+'.pruned.edges', sep='\t', header=None,index=None)
 
         logger.debug('Number of edges is ' + str(len(edges)) + ', number of nodes are ' + str(len(nodes)))
+        return self._register_pruned_hidef_output_files(outprefix + '.pruned')
