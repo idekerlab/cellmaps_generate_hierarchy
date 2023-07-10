@@ -5,13 +5,11 @@ import csv
 import logging
 import subprocess
 from datetime import date
-import shutil
 import ndex2
 import cdapsutil
 import cellmaps_generate_hierarchy
 from cellmaps_utils import constants
 from cellmaps_utils.provenance import ProvenanceUtil
-from cellmaps_generate_hierarchy.maturehierarchy import HiDeFHierarchyRefiner
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
 
 logger = logging.getLogger(__name__)
@@ -364,7 +362,9 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
 
         :param networks: Prefix paths of input PPI networks
         :type networks: list
-        :return: (:py:class:`~ndex2.nice_cx_network.NiceCXNetwork`, :py:class:`list`)
+        :return: (largest network path,
+                  :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`,
+                  :py:class:`list`)
         :rtype: tuple
         """
         net_paths = []
@@ -405,7 +405,8 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                 self._generated_dataset_ids.append(dataset_id)
 
         logger.debug('Largest network name: ' + largest_network.get_name())
-        return largest_network, net_paths
+        return (largest_network_path + constants.CX_SUFFIX,
+                largest_network, net_paths)
 
     def _register_hidef_output_files(self, outdir):
         """
@@ -431,6 +432,24 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                                                                  source_file=outfile,
                                                                  data_dict=data_dict)
             self._generated_dataset_ids.append(dataset_id)
+
+    def _annotate_hierarchy(self, network=None, path=None):
+        """
+        Adds HCX attributes to network as well as sets
+
+        ``prov:wasGeneratedBy`` to the name and version of this tool
+
+        ``prov:wasDerivedFrom`` to FAIRSCAPE dataset id of this rocrate
+
+        :param network: Hierarchy
+        :type network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :param path: Path to largest PPI network in CX or CX2 format
+        :type path: str
+        """
+        network.set_network_attribute(name='prov:wasGeneratedBy',
+                                      values=self._author + ' ' + self._version)
+        network.set_network_attribute(name='prov:wasDerivedFrom',
+                                      values='RO-crate: ' + os.path.dirname(path))
 
     def get_hierarchy(self, networks):
         """
@@ -459,7 +478,8 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         """
         outdir = os.path.dirname(networks[0])
 
-        largest_net, edgelist_files = self._create_edgelist_files_for_networks(networks)
+        (largest_net_path, largest_net,
+         edgelist_files) = self._create_edgelist_files_for_networks(networks)
 
         cmd = [self._python, self._hidef_cmd, '--g']
         cmd.extend(edgelist_files)
@@ -501,7 +521,9 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
             self._generated_dataset_ids.append(dataset_id)
 
             cd = cdapsutil.CommunityDetection(runner=cdapsutil.ExternalResultsRunner())
-            return cd.run_community_detection(largest_net, algorithm=cdaps_out_file)
+            hier = cd.run_community_detection(largest_net, algorithm=cdaps_out_file)
+            self._annotate_hierarchy(network=hier, path=largest_net_path)
+            return hier
 
         except FileNotFoundError as fe:
             logger.error('No output from hidef: ' + str(fe) + '\n')
