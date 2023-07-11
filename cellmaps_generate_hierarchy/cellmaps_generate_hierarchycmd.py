@@ -61,10 +61,10 @@ def _parse_arguments(desc, args):
                         default=[0.001, 0.002, 0.003, 0.004, 0.005, 0.006,
                                  0.007, 0.008, 0.009, 0.01, 0.02, 0.03,
                                  0.04, 0.05, 0.10],
-                        help='Cutoffs used to generate PPI input networks. For example,' \
-                             'a value of 0.1 means to generate a PPI input network using the ' \
-                             'top 10% of coembedding entries. Each cutoff set generates another ' \
-                             'PPI network')
+                        help='Cutoffs used to generate PPI input networks. For example, '
+                             'a value of 0.1 means to generate PPI input network using the '
+                             'top ten percent of coembedding entries. Each cutoff generates '
+                             'another PPI network')
     parser.add_argument('--logconf', default=None,
                         help='Path to python logging configuration file in '
                              'this format: https://docs.python.org/3/library/'
