@@ -150,7 +150,8 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
             gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov,
                                                author='author',
                                                version='version')
-            largest_network, net_paths = gen._create_edgelist_files_for_networks(cx_networks)
+            (largest_net_path, largest_network, net_paths) = gen._create_edgelist_files_for_networks(cx_networks)
+            self.assertEqual(two_edge_net_file + '.cx', largest_net_path)
             self.assertEqual('two', largest_network.get_name())
             self.assertEqual(2, len(net_paths))
             self.assertTrue(one_edge_net_file +
