@@ -95,9 +95,9 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
         temp_dir = tempfile.mkdtemp()
         try:
             shutil.copy(os.path.join(os.path.dirname(__file__), 'data', 'hidef_output.nodes'),
-                        os.path.join(temp_dir, 'hidef_output.nodes'))
+                        os.path.join(temp_dir, 'hidef_output.pruned.nodes'))
             shutil.copy(os.path.join(os.path.dirname(__file__), 'data', 'hidef_output.edges'),
-                        os.path.join(temp_dir, 'hidef_output.edges'))
+                        os.path.join(temp_dir, 'hidef_output.pruned.edges'))
             data = ''
             out_stream = StringIO(data)
             gen = CDAPSHiDeFHierarchyGenerator()
@@ -134,8 +134,8 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
 
             two_edge_net = ndex2.nice_cx_network.NiceCXNetwork()
             two_edge_net.set_name('two')
-            n_one = two_edge_net.create_node('n3')
-            n_two = two_edge_net.create_node('n4')
+            n_one = two_edge_net.create_node('n1')
+            n_two = two_edge_net.create_node('n2')
             n_three = two_edge_net.create_node('n5')
             two_edge_net.create_edge(edge_source=n_one, edge_target=n_two)
             two_edge_net.create_edge(edge_source=n_two, edge_target=n_three)
@@ -150,7 +150,8 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
             gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov,
                                                author='author',
                                                version='version')
-            largest_network, net_paths = gen._create_edgelist_files_for_networks(cx_networks)
+            (largest_net_path, largest_network, net_paths) = gen._create_edgelist_files_for_networks(cx_networks)
+            self.assertEqual(two_edge_net_file + '.cx', largest_net_path)
             self.assertEqual('two', largest_network.get_name())
             self.assertEqual(2, len(net_paths))
             self.assertTrue(one_edge_net_file +
@@ -240,8 +241,8 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
 
             two_edge_net = ndex2.nice_cx_network.NiceCXNetwork()
             two_edge_net.set_name('two')
-            n_one = two_edge_net.create_node('n3')
-            n_two = two_edge_net.create_node('n4')
+            n_one = two_edge_net.create_node('n1')
+            n_two = two_edge_net.create_node('n2')
             n_three = two_edge_net.create_node('n5')
             two_edge_net.create_edge(edge_source=n_one, edge_target=n_two)
             two_edge_net.create_edge(edge_source=n_two, edge_target=n_three)

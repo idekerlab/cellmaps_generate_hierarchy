@@ -1,6 +1,6 @@
-========================
-CM4AI Generate Hierarchy
-========================
+=============================
+Cell Maps Generate Hierarchy
+=============================
 
 
 .. image:: https://img.shields.io/pypi/v/cellmaps_generate_hierarchy.svg
@@ -13,12 +13,11 @@ CM4AI Generate Hierarchy
         :target: https://cellmaps-generate-hierarchy.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-A tool to generate hierarchies from protein to protein interaction networks
+Generates hierarchy from `Cell Maps Coembedding <https://cellmaps-coembedding.readthedocs.io/>`__
+for `Cell Maps for AI (CM4AI) <https://cm4ai.org>`__
 
 * Free software: MIT license
 * Documentation: https://cellmaps-generate-hierarchy.readthedocs.io.
-
-
 
 Dependencies
 ------------

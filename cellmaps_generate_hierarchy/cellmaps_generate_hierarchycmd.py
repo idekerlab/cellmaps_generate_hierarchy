@@ -11,6 +11,7 @@ from cellmaps_utils.provenance import ProvenanceUtil
 import cellmaps_generate_hierarchy
 from cellmaps_generate_hierarchy.ppi import CosineSimilarityPPIGenerator
 from cellmaps_generate_hierarchy.hierarchy import CDAPSHiDeFHierarchyGenerator
+from cellmaps_generate_hierarchy.maturehierarchy import HiDeFHierarchyRefiner
 from cellmaps_generate_hierarchy.runner import CellmapsGenerateHierarchy
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,23 @@ def _parse_arguments(desc, args):
                         help='Name of project running this tool, needed for '
                              'FAIRSCAPE. If unset, project name specified '
                              'in --coembedding_dir directory will be used')
+    parser.add_argument('--containment_threshold', default=0.75,
+                        help='Containment index threshold for pruning hierarchy')
+    parser.add_argument('--jaccard_threshold', default=0.9,
+                        help='Jaccard index threshold for merging similar clusters')
+    parser.add_argument('--min_diff', default=1,
+                        help='Minimum difference in number of proteins for every '
+                             'parent-child pair')
+    parser.add_argument('--min_system_size', default=4,
+                        help='Minimum number of proteins each system must have to be kept')
+    parser.add_argument('--ppi_cutoffs', nargs='+', type=float,
+                        default=[0.001, 0.002, 0.003, 0.004, 0.005, 0.006,
+                                 0.007, 0.008, 0.009, 0.01, 0.02, 0.03,
+                                 0.04, 0.05, 0.10],
+                        help='Cutoffs used to generate PPI input networks. For example, '
+                             'a value of 0.1 means to generate PPI input network using the '
+                             'top ten percent of coembedding entries. Each cutoff generates '
+                             'another PPI network')
     parser.add_argument('--logconf', default=None,
                         help='Path to python logging configuration file in '
                              'this format: https://docs.python.org/3/library/'
@@ -105,11 +123,20 @@ def main(args):
     try:
         logutils.setup_cmd_logging(theargs)
         provenance = ProvenanceUtil()
-        ppigen = CosineSimilarityPPIGenerator(embeddingdirs=theargs.coembedding_dirs)
+        ppigen = CosineSimilarityPPIGenerator(embeddingdirs=theargs.coembedding_dirs, 
+                                              cutoffs=theargs.ppi_cutoffs)
+
+        refiner = HiDeFHierarchyRefiner(ci_thre=theargs.containment_threshold,
+                                        ji_thre=theargs.jaccard_threshold,
+                                        min_term_size=theargs.min_system_size,
+                                        min_diff=theargs.min_diff,
+                                        provenance_utils=provenance)
 
         hiergen = CDAPSHiDeFHierarchyGenerator(author='cellmaps_generate_hierarchy',
+                                               refiner=refiner,
                                                version=cellmaps_generate_hierarchy.__version__,
                                                provenance_utils=provenance)
+
         return CellmapsGenerateHierarchy(outdir=theargs.outdir,
                                          inputdirs=theargs.coembedding_dirs,
                                          ppigen=ppigen,

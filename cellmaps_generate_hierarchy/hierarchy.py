@@ -63,6 +63,8 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
 
     HIDEF_OUT_PREFIX = 'hidef_output'
 
+    TRANSLATED_HIDEF_OUT_PREFIX = 'hidefnames_output'
+
     CDRES_KEY_NAME = 'communityDetectionResult'
 
     NODE_CX_KEY_NAME = 'nodeAttributesAsCX2'
@@ -73,6 +75,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
 
     def __init__(self, hidef_cmd='hidef_finder.py',
                  provenance_utils=ProvenanceUtil(),
+                 refiner=None,
                  author='cellmaps_generate_hierarchy',
                  version=cellmaps_generate_hierarchy.__version__):
         """
@@ -87,6 +90,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         super().__init__(provenance_utils=provenance_utils,
                          author=author,
                          version=version)
+        self._refiner = refiner
         self._python = sys.executable
         if os.sep not in hidef_cmd:
             self._hidef_cmd = os.path.join(os.path.dirname(self._python), hidef_cmd)
@@ -262,7 +266,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         """
         nodefile = os.path.join(outdir,
                                 CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX +
-                                '.nodes')
+                                '.pruned.nodes')
         max_node_id = self._get_max_node_id(nodefile)
         cluster_node_map = {}
         persistence_map = {}
@@ -276,7 +280,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                 self.update_persistence_map(persistence_map, cur_node_id, row[-1])
                 self.write_members_for_row(out_stream, row,
                                       cur_node_id)
-        edge_file = os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX + '.edges')
+        edge_file = os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX + '.pruned.edges')
         self.write_communities(out_stream, edge_file, cluster_node_map)
         self.write_persistence_node_attribute(out_stream, persistence_map)
         out_stream.write('\n')
@@ -309,6 +313,46 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
 
         return p.returncode, out, err
 
+    def _get_largest_network(self, networks):
+        """
+        Finds largest network by file size
+
+        :param networks: list of :py:class:`~ndex2.nice_cx_network.NiceCXNetwork` objects
+        :type networks: list
+        :return: Largest network
+        :rtype: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        """
+        largest_network = None
+        max_file_size = 0
+        for n in networks:
+            file_size = os.path.getsize(n + constants.CX_SUFFIX)
+            if file_size >= max_file_size:
+                largest_network = n
+                max_file_size = file_size
+        return largest_network
+
+    def _get_name_to_id_dict(self, network):
+        """
+
+        :param network:
+        :return:
+        """
+        name_to_id = {}
+        for node_id, node_obj in network.get_nodes():
+            name_to_id[node_obj['n']] = node_id
+        return name_to_id
+
+    def _get_id_to_name_dict(self, network):
+        """
+
+        :param network:
+        :return:
+        """
+        id_to_name = {}
+        for node_id, node_obj in network.get_nodes():
+            id_to_name[node_id] = node_obj['n']
+        return id_to_name
+
     def _create_edgelist_files_for_networks(self, networks):
         """
         Iterates through **networks** prefix paths and loads the
@@ -318,27 +362,34 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
 
         :param networks: Prefix paths of input PPI networks
         :type networks: list
-        :return: (:py:class:`~ndex2.nice_cx_network.NiceCXNetwork`, :py:class:`list`)
+        :return: (largest network path,
+                  :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`,
+                  :py:class:`list`)
         :rtype: tuple
         """
         net_paths = []
-        largest_network = None
-        max_edge_count = 0
+
+        largest_network_path = self._get_largest_network(networks)
+        largest_network = ndex2.create_nice_cx_from_file(largest_network_path + constants.CX_SUFFIX)
+        logger.debug('Largest network name: ' + largest_network.get_name())
+        largest_name_to_id = self._get_name_to_id_dict(largest_network)
+
         for n in networks:
-            logger.debug('Creating NiceCXNetwork object from: ' + n + constants.CX_SUFFIX)
-            net = ndex2.create_nice_cx_from_file(n + constants.CX_SUFFIX)
+            if largest_network_path == n:
+                net = largest_network
+            else:
+                logger.debug('Creating NiceCXNetwork object from: ' + n + constants.CX_SUFFIX)
+                net = ndex2.create_nice_cx_from_file(n + constants.CX_SUFFIX)
             dest_path = n + CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV
             net_paths.append(dest_path)
-            edge_count = 0
             logger.debug('Writing out id edgelist: ' + str(dest_path))
+            id_to_name = self._get_id_to_name_dict(net)
             with open(dest_path, 'w') as f:
                 for edge_id, edge_obj in net.get_edges():
-                    f.write(str(edge_obj['s']) + '\t' + str(edge_obj['t']) + '\n')
-                    edge_count += 1
-
-            # find the largest network by edge count
-            if edge_count >= max_edge_count:
-                largest_network = net
+                    f.write(str(largest_name_to_id[id_to_name[edge_obj['s']]]) +
+                            '\t' +
+                            str(largest_name_to_id[id_to_name[edge_obj['t']]]) +
+                            '\n')
 
                 # register edgelist file with fairscape
                 data_dict = {'name': os.path.basename(dest_path) +
@@ -354,7 +405,8 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                 self._generated_dataset_ids.append(dataset_id)
 
         logger.debug('Largest network name: ' + largest_network.get_name())
-        return largest_network, net_paths
+        return (largest_network_path + constants.CX_SUFFIX,
+                largest_network, net_paths)
 
     def _register_hidef_output_files(self, outdir):
         """
@@ -380,6 +432,24 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                                                                  source_file=outfile,
                                                                  data_dict=data_dict)
             self._generated_dataset_ids.append(dataset_id)
+
+    def _annotate_hierarchy(self, network=None, path=None):
+        """
+        Adds HCX attributes to network as well as sets
+
+        ``prov:wasGeneratedBy`` to the name and version of this tool
+
+        ``prov:wasDerivedFrom`` to FAIRSCAPE dataset id of this rocrate
+
+        :param network: Hierarchy
+        :type network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :param path: Path to largest PPI network in CX or CX2 format
+        :type path: str
+        """
+        network.set_network_attribute(name='prov:wasGeneratedBy',
+                                      values=self._author + ' ' + self._version)
+        network.set_network_attribute(name='prov:wasDerivedFrom',
+                                      values='RO-crate: ' + os.path.dirname(path))
 
     def get_hierarchy(self, networks):
         """
@@ -408,11 +478,13 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         """
         outdir = os.path.dirname(networks[0])
 
-        largest_net, edgelist_files = self._create_edgelist_files_for_networks(networks)
+        (largest_net_path, largest_net,
+         edgelist_files) = self._create_edgelist_files_for_networks(networks)
 
         cmd = [self._python, self._hidef_cmd, '--g']
         cmd.extend(edgelist_files)
-        cmd.extend(['--o', os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX),
+        outputprefix = os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX)
+        cmd.extend(['--o', outputprefix,
                     '--alg', 'leiden', '--maxres', '80', '--k', '10',
                     '--skipgml'])
 
@@ -427,6 +499,9 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         self._register_hidef_output_files(outdir)
 
         try:
+            if self._refiner is not None:
+                self._refiner.refine_hierarchy(outprefix=outputprefix)
+
             cdaps_out_file = os.path.join(outdir,
                                           CDAPSHiDeFHierarchyGenerator.CDAPS_JSON_FILE)
             with open(cdaps_out_file, 'w') as out_stream:
@@ -446,7 +521,9 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
             self._generated_dataset_ids.append(dataset_id)
 
             cd = cdapsutil.CommunityDetection(runner=cdapsutil.ExternalResultsRunner())
-            return cd.run_community_detection(largest_net, algorithm=cdaps_out_file)
+            hier = cd.run_community_detection(largest_net, algorithm=cdaps_out_file)
+            self._annotate_hierarchy(network=hier, path=largest_net_path)
+            return hier
 
         except FileNotFoundError as fe:
             logger.error('No output from hidef: ' + str(fe) + '\n')
