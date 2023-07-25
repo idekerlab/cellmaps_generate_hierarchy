@@ -42,17 +42,16 @@ class CosineSimilarityPPIGenerator(PPINetworkGenerator):
     Where ID is gene and #'s is embedding vector
     """
 
-    def __init__(self, embeddingdir=None,
+    def __init__(self, embeddingdirs=[],
                  cutoffs=[0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.04, 0.05, 0.10]):
         """
         Constructor
         """
         super().__init__()
-        if embeddingdir is None:
+        if len(embeddingdirs) < 1 :
             raise CellmapsGenerateHierarchyError('embeddingdir is None')
 
-        self._embeddingfile = os.path.join(embeddingdir,
-                                           constants.CO_EMBEDDING_FILE)
+        self._embeddingdirs = embeddingdirs
         self._cutoffs = cutoffs
 
     def _get_ppi_dataframe(self):
@@ -60,11 +59,28 @@ class CosineSimilarityPPIGenerator(PPINetworkGenerator):
 
         :return:
         """
-        z = pd.read_table(self._embeddingfile, sep='\t', index_col=0)
-        sim_mat = music_utils.cosine_similarity_scaled(z)
-        keep = np.triu(np.ones(sim_mat.shape)).astype(bool)
-        sim_mat = sim_mat.where(keep)
-
+        sim_mats = []
+        index = []
+        
+        for embeddingdir in self._embeddingdirs:
+            embeddingfile = os.path.join(embeddingdir,
+                                               constants.CO_EMBEDDING_FILE)
+            z = pd.read_table(embeddingfile, sep='\t', index_col=0)
+            
+            #give the same ordering
+            if len(index) == 0:
+                index = z.index.values
+            else: 
+                z = z.loc[index]
+                
+            sim_mat = music_utils.cosine_similarity_scaled(z)
+            keep = np.triu(np.ones(sim_mat.shape)).astype(bool)
+            sim_mat = sim_mat.where(keep)
+            sim_mats.append(sim_mat)
+        
+        #take mean across folds
+        sim_mat = pd.DataFrame(np.array(sim_mats).mean(axis=0), index=index, columns=index)
+        
         pairs = sim_mat.stack().reset_index().rename(columns={'level_0': constants.PPI_EDGELIST_GENEA_COL,
                                                               'level_1': constants.PPI_EDGELIST_GENEB_COL,
                                                               0: constants.WEIGHTED_PPI_EDGELIST_WEIGHT_COL})

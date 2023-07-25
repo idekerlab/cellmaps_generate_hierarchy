@@ -16,7 +16,7 @@ from cellmaps_generate_hierarchy.runner import CellmapsGenerateHierarchy
 logger = logging.getLogger(__name__)
 
 
-CO_EMBEDDINGDIR='--coembedding_dir'
+CO_EMBEDDINGDIRS='--coembedding_dirs'
 
 
 def _parse_arguments(desc, args):
@@ -33,8 +33,8 @@ def _parse_arguments(desc, args):
     parser = argparse.ArgumentParser(description=desc,
                                      formatter_class=constants.ArgParseFormatter)
     parser.add_argument('outdir', help='Output directory')
-    parser.add_argument(CO_EMBEDDINGDIR, required=True,
-                        help='Directory where coembedding was run')
+    parser.add_argument(CO_EMBEDDINGDIRS, required=True, nargs="+",
+                        help='Directories where coembedding was run')
     parser.add_argument('--name',
                         help='Name of this run, needed for FAIRSCAPE. If '
                              'unset, name value from specified '
@@ -81,7 +81,7 @@ def main(args):
     desc = """
     Version {version}
 
-    Takes a coembedding file {coembedding_file} file from {coembedding_dir} directory that
+    Takes a list of coembedding file {coembedding_file} files from {coembedding_dirs} directories (corresponding to multiple folds of the same data) that
     is in TSV format and generates several interaction networks that are fed via -g flag
     to HiDeF to create a hierarchy.
     
@@ -97,7 +97,7 @@ def main(args):
 
     """.format(version=cellmaps_generate_hierarchy.__version__,
                coembedding_file=constants.CO_EMBEDDING_FILE,
-               coembedding_dir=CO_EMBEDDINGDIR)
+               coembedding_dirs=', '.join(CO_EMBEDDINGDIRS))
     theargs = _parse_arguments(desc, args[1:])
     theargs.program = args[0]
     theargs.version = cellmaps_generate_hierarchy.__version__
@@ -105,13 +105,13 @@ def main(args):
     try:
         logutils.setup_cmd_logging(theargs)
         provenance = ProvenanceUtil()
-        ppigen = CosineSimilarityPPIGenerator(embeddingdir=theargs.coembedding_dir)
+        ppigen = CosineSimilarityPPIGenerator(embeddingdirs=theargs.coembedding_dirs)
 
         hiergen = CDAPSHiDeFHierarchyGenerator(author='cellmaps_generate_hierarchy',
                                                version=cellmaps_generate_hierarchy.__version__,
                                                provenance_utils=provenance)
         return CellmapsGenerateHierarchy(outdir=theargs.outdir,
-                                         inputdir=theargs.coembedding_dir,
+                                         inputdirs=theargs.coembedding_dirs,
                                          ppigen=ppigen,
                                          hiergen=hiergen,
                                          input_data_dict=theargs.__dict__,
