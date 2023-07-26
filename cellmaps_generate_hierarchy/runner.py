@@ -106,14 +106,19 @@ class CellmapsGenerateHierarchy(object):
         :return:
         """
         logger.debug('Getting id of input rocrate')
-        input_dataset_id = self._provenance_utils.get_id_of_rocrate(self._inputdirs)
+        input_dataset_ids = []
+        if isinstance(self._inputdirs, list):
+            for i_dir in self._inputdirs:
+                input_dataset_ids.append(self._provenance_utils.get_id_of_rocrate(i_dir))
+        else:
+            input_dataset_ids.append(self._provenance_utils.get_id_of_rocrate(self._inputdirs))
         self._provenance_utils.register_computation(self._outdir,
                                                     name=cellmaps_generate_hierarchy.__name__ + ' computation',
                                                     run_by=str(self._provenance_utils.get_login()),
                                                     command=str(self._input_data_dict),
                                                     description='run of ' + cellmaps_generate_hierarchy.__name__,
                                                     used_software=[self._softwareid],
-                                                    used_dataset=[input_dataset_id],
+                                                    used_dataset=input_dataset_ids,
                                                     generated=generated_dataset_ids)
 
     def get_ppi_network_dest_file(self, ppi_network):
