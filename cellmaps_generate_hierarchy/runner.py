@@ -22,7 +22,7 @@ class CellmapsGenerateHierarchy(object):
     generate a hierarchy
     """
     def __init__(self, outdir=None,
-                 inputdir=None,
+                 inputdirs=[],
                  ppigen=None,
                  hiergen=None,
                  name=None,
@@ -48,7 +48,7 @@ class CellmapsGenerateHierarchy(object):
         if outdir is None:
             raise CellmapsGenerateHierarchyError('outdir is None')
         self._outdir = os.path.abspath(outdir)
-        self._inputdir = inputdir
+        self._inputdirs = inputdirs
         self._start_time = int(time.time())
         self._ppigen = ppigen
         self._hiergen = hiergen
@@ -65,25 +65,26 @@ class CellmapsGenerateHierarchy(object):
         :raises CellMapsProvenanceError: If there is an error
         """
         logger.debug('Registering rocrate with FAIRSCAPE')
-        name, proj_name, org_name = self._provenance_utils.get_name_project_org_of_rocrate(self._inputdir)
+        for inputdir in self._inputdirs:
+            name, proj_name, org_name = self._provenance_utils.get_name_project_org_of_rocrate(inputdir)
 
-        if self._name is not None:
-            name = self._name
+            if self._name is not None:
+                name = self._name
 
-        if self._organization_name is not None:
-            org_name = self._organization_name
+            if self._organization_name is not None:
+                org_name = self._organization_name
 
-        if self._project_name is not None:
-            proj_name = self._project_name
-        try:
-            self._provenance_utils.register_rocrate(self._outdir,
-                                                    name=name,
-                                                    organization_name=org_name,
-                                                    project_name=proj_name)
-        except TypeError as te:
-            raise CellmapsGenerateHierarchyError('Invalid provenance: ' + str(te))
-        except KeyError as ke:
-            raise CellmapsGenerateHierarchyError('Key missing in provenance: ' + str(ke))
+            if self._project_name is not None:
+                proj_name = self._project_name
+            try:
+                self._provenance_utils.register_rocrate(self._outdir,
+                                                        name=name,
+                                                        organization_name=org_name,
+                                                        project_name=proj_name)
+            except TypeError as te:
+                raise CellmapsGenerateHierarchyError('Invalid provenance: ' + str(te))
+            except KeyError as ke:
+                raise CellmapsGenerateHierarchyError('Key missing in provenance: ' + str(ke))
 
     def _register_software(self):
         """
@@ -105,7 +106,7 @@ class CellmapsGenerateHierarchy(object):
         :return:
         """
         logger.debug('Getting id of input rocrate')
-        input_dataset_id = self._provenance_utils.get_id_of_rocrate(self._inputdir)
+        input_dataset_id = self._provenance_utils.get_id_of_rocrate(self._inputdirs)
         self._provenance_utils.register_computation(self._outdir,
                                                     name=cellmaps_generate_hierarchy.__name__ + ' computation',
                                                     run_by=str(self._provenance_utils.get_login()),
@@ -233,7 +234,6 @@ class CellmapsGenerateHierarchy(object):
 
             if os.path.isdir(self._outdir):
                 raise CellmapsGenerateHierarchyError(self._outdir + ' already exists')
-
             if not os.path.isdir(self._outdir):
                 os.makedirs(self._outdir, mode=0o755)
 
