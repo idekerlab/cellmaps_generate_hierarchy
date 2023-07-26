@@ -24,16 +24,16 @@ class TestCellmaps_generate_hierarchy(unittest.TestCase):
         """Tests parse arguments"""
         res = cellmaps_generate_hierarchycmd._parse_arguments('hi',
                                                               ['outdir',
-                                                               '--coembedding_dir',
+                                                               '--coembedding_dirs',
                                                                'foo'])
 
         self.assertEqual('outdir', res.outdir)
-        self.assertEqual('foo', res.coembedding_dir)
+        self.assertEqual(['foo'], res.coembedding_dirs)
         self.assertEqual(0, res.verbose)
         self.assertEqual(None, res.logconf)
 
         someargs = ['outdir', '-vv', '--logconf', 'hi',
-                    '--coembedding_dir', 'blah']
+                    '--coembedding_dirs', 'blah']
         res = cellmaps_generate_hierarchycmd._parse_arguments('hi', someargs)
 
         self.assertEqual(2, res.verbose)
@@ -47,7 +47,7 @@ class TestCellmaps_generate_hierarchy(unittest.TestCase):
             temp_dir = tempfile.mkdtemp()
             res = cellmaps_generate_hierarchycmd.main(['myprog.py',
                                                        temp_dir,
-                                                       '--coembedding_dir',
+                                                       '--coembedding_dirs',
                                                        'foo'])
             self.assertEqual(res, 2)
         finally:

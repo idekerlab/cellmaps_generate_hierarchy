@@ -48,7 +48,7 @@ class CosineSimilarityPPIGenerator(PPINetworkGenerator):
         Constructor
         """
         super().__init__()
-        if len(embeddingdirs) < 1 :
+        if embeddingdirs is None or len(embeddingdirs) < 1 :
             raise CellmapsGenerateHierarchyError('embeddingdir is None')
 
         self._embeddingdirs = embeddingdirs

@@ -31,7 +31,7 @@ class TestCosineSimilarityPPIGenerator(unittest.TestCase):
         try:
             shutil.copy(self.get_fake_five_line_coembedding_file(),
                         os.path.join(temp_dir, constants.CO_EMBEDDING_FILE))
-            gen = CosineSimilarityPPIGenerator(embeddingdir=temp_dir,
+            gen = CosineSimilarityPPIGenerator(embeddingdirs=[temp_dir],
                                                cutoffs=[1.0])
 
             itr = gen.get_next_network()
