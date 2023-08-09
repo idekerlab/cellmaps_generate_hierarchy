@@ -13,6 +13,7 @@ from cellmaps_generate_hierarchy.ppi import CosineSimilarityPPIGenerator
 from cellmaps_generate_hierarchy.hierarchy import CDAPSHiDeFHierarchyGenerator
 from cellmaps_generate_hierarchy.maturehierarchy import HiDeFHierarchyRefiner
 from cellmaps_generate_hierarchy.runner import CellmapsGenerateHierarchy
+from cellmaps_generate_hierarchy.layout import CytoscapeJSBreadthFirstLayout
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,8 @@ def _parse_arguments(desc, args):
                              'a value of 0.1 means to generate PPI input network using the '
                              'top ten percent of coembedding entries. Each cutoff generates '
                              'another PPI network')
+    parser.add_argument('--skip_layout', action='store_true',
+                        help='If set, skips layout of hierarchy step')
     parser.add_argument('--logconf', default=None,
                         help='Path to python logging configuration file in '
                              'this format: https://docs.python.org/3/library/'
@@ -136,11 +139,16 @@ def main(args):
                                                refiner=refiner,
                                                version=cellmaps_generate_hierarchy.__version__,
                                                provenance_utils=provenance)
+        if theargs.skip_layout is True:
+            layoutalgo = None
+        else:
+            layoutalgo = CytoscapeJSBreadthFirstLayout()
 
         return CellmapsGenerateHierarchy(outdir=theargs.outdir,
                                          inputdirs=theargs.coembedding_dirs,
                                          ppigen=ppigen,
                                          hiergen=hiergen,
+                                         layoutalgo=layoutalgo,
                                          input_data_dict=theargs.__dict__,
                                          provenance_utils=provenance).run()
     except Exception as e:

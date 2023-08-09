@@ -28,6 +28,7 @@ class CellmapsGenerateHierarchy(object):
                  name=None,
                  organization_name=None,
                  project_name=None,
+                 layoutalgo=None,
                  provenance_utils=ProvenanceUtil(),
                  input_data_dict=None):
         """
@@ -57,6 +58,7 @@ class CellmapsGenerateHierarchy(object):
         self._organization_name = organization_name
         self._input_data_dict = input_data_dict
         self._provenance_utils = provenance_utils
+        self._layoutalgo = layoutalgo
 
     def _create_rocrate(self):
         """
@@ -265,6 +267,12 @@ class CellmapsGenerateHierarchy(object):
 
             # generate hierarchy
             hierarchy = self._hiergen.get_hierarchy(ppi_network_prefix_paths)
+
+            if self._layoutalgo is not None:
+                logger.debug('Applying layout')
+                self._layoutalgo.add_layout(network=hierarchy)
+            else:
+                logger.debug('No layout algorithm set, skipping')
 
             # write out hierarchy
             dataset_id, hierarchy_out_file = self._write_and_register_hierarchy_network(hierarchy)
