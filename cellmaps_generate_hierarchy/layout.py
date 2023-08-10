@@ -91,6 +91,78 @@ class CytoscapeJSBreadthFirstLayout(HierarchyLayout):
 
         network.set_opaque_aspect('cartesianLayout', res.json()['result'])
 
+    def _get_task_status(self, task_id, start_time=None,
+                         timeout=None):
+        """
+        Gets status of task
+
+        :param task_id: id of task
+        :type task_id: str
+        :return: response
+        :rtype: :py:class:`requests.Response`
+        """
+        logger.debug('Checking status of task: ' + str(task_id))
+        res = requests.get(self._rest_endpoint + '/' +
+                           str(task_id) + '/status',
+                           headers=CytoscapeJSBreadthFirstLayout.HEADERS)
+        if res.status_code != 200:
+            logger.debug('Request came back with error, '
+                         'sleeping ' + str(self._retry_sleep_time) +
+                         ' second(s) and trying again : ' +
+                         str(res.text))
+            if (int(time.time()) - start_time) > timeout:
+                raise CellmapsGenerateHierarchyError('Layout task exceeded timeout of ' +
+                                                     str(timeout) + ' seconds')
+            time.sleep(self._retry_sleep_time)
+            return None
+        return res
+
+    def _get_id_from_response(self, res):
+        """
+        Extracts id of task from json response
+
+        :param res: response from post to layout service
+        :type res: :py:class`requests.Response`
+        :raises CellmapsGenerateHierarchyError: If there is an error trying
+                                                to get id from response
+        :return: id of task
+        :rtype: str
+        """
+        res_json = res.json()
+        if 'id' not in res_json:
+            raise CellmapsGenerateHierarchyError('Error getting id from response: ' +
+                                                 str(res_json) + ' ' + str(res.text))
+        return res_json['id']
+
+    def _is_task_complete(self, res, start_time=None,
+                          timeout=None):
+        """
+        Checks if task is complete by examining the json from the **res** and
+        if ``progress`` is ``100`` and ``status`` is ``complete`` the task is done
+
+        :param res:
+        :param start_time: time task was started in seconds
+        :type start_time: float
+        :param timeout: Number of seconds task is allowed to run before
+                        considering the task is a failure
+        :type timeout: float
+        :raises CellmapsGenerateHierarchyError: If task ``status`` is not ``complete`` or
+                                                if **timeout** exceeded
+        :return: ``True`` if task is completed otherwise ``False``
+        :rtype: bool
+        """
+        status_dict = res.json()
+        if status_dict['progress'] == 100:
+            if status_dict['status'] != 'complete':
+                raise CellmapsGenerateHierarchyError('Task failed: ' +
+                                                     str(status_dict))
+            return True
+        if (int(time.time()) - start_time) > timeout:
+            raise CellmapsGenerateHierarchyError('Layout task exceeded timeout of ' +
+                                                 str(timeout) + ' seconds')
+        time.sleep(self._retry_sleep_time)
+        return False
+
     def _wait_for_task(self, res, timeout=1800):
         """
         Waits for task set in **res** response
@@ -108,38 +180,19 @@ class CytoscapeJSBreadthFirstLayout(HierarchyLayout):
                                                  str(res.status_code) + ' : ' +
                                                  str(res.text))
 
-        # probably should check 'id' exists otherwise we will have
-        # a random exception
-        task_id = res.json()['id']
+        task_id = self._get_id_from_response(res)
+
         start_time = int(time.time())
         complete = False
         while complete is False:
-            logger.debug('Checking status of task: ' + str(task_id))
-            res = requests.get(self._rest_endpoint + '/' +
-                               str(task_id) + '/status',
-                               headers=CytoscapeJSBreadthFirstLayout.HEADERS)
-            if res.status_code != 200:
-                logger.debug('Request came back with error, '
-                             'sleeping ' + str(self._retry_sleep_time) +
-                             ' second(s) and trying again : ' +
-                             str(res.text))
-                if (int(time.time()) - start_time) > timeout:
-                    raise CellmapsGenerateHierarchyError('Layout task exceeded timeout of ' +
-                                                         str(timeout) + ' seconds')
-                time.sleep(self._retry_sleep_time)
-
+            res = self._get_task_status(task_id=task_id,
+                                        start_time=start_time,
+                                        timeout=timeout)
+            if res is None:
                 continue
 
-            status_dict = res.json()
-            if status_dict['progress'] == 100:
-                if status_dict['status'] != 'complete':
-                    raise CellmapsGenerateHierarchyError('Task failed: ' +
-                                                         str(status_dict))
-                break
-            if (int(time.time()) - start_time) > timeout:
-                raise CellmapsGenerateHierarchyError('Layout task exceeded timeout of ' +
-                                                     str(timeout) + ' seconds')
-            time.sleep(self._retry_sleep_time)
+            complete = self._is_task_complete(res, start_time=start_time,
+                                              timeout=timeout)
         return task_id
 
 
