@@ -38,7 +38,7 @@ requirements = ['cellmaps_utils',
 
 setup_requirements = []
 
-test_requirements = []
+test_requirements = ['requests_mock']
 
 setup(
     author=author,
