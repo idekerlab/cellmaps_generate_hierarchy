@@ -63,7 +63,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'CM4AI Generate Hierarchy'
+project = u'cellmaps_generate_hierarchy'
 copyright = u"2023, The Regents of the University of California"
 author = u"Christopher Churas"
 
