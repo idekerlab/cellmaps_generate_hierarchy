@@ -13,8 +13,7 @@ Cell Maps Generate Hierarchy
         :target: https://cellmaps-generate-hierarchy.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
-Generates hierarchy from `Cell Maps Coembedding <https://cellmaps-coembedding.readthedocs.io/>`__
-for `Cell Maps for AI (CM4AI) <https://cm4ai.org>`__
+Generates hierarchy from `Cell Maps Coembedding <https://cellmaps-coembedding.readthedocs.io/>`__ using `HiDeF <https://github.com/fanzheng10/HiDeF/>`__
 
 * Free software: MIT license
 * Documentation: https://cellmaps-generate-hierarchy.readthedocs.io.
@@ -29,7 +28,6 @@ Dependencies
 * `ndex2 <https://pypi.org/project/ndex2>`__
 * `HiDeF <https://pypi.org/project/hidef>`__
    **Note:** If running HiDeF in parallel on same machine it must be built directly from `source <https://github.com/fanzheng10/HiDeF>`__
-
 
 
 
@@ -102,8 +100,7 @@ against those changes.
 Needed files
 ------------
 
-**TODO:** Add description of needed files
-
+The output directory for co-embedding is required (see `Cell Maps Coembedding <https://github.com/idekerlab/cellmaps_coembedding/>`__). 
 
 Usage
 -----
@@ -112,24 +109,19 @@ For information invoke :code:`cellmaps_generate_hierarchycmd.py -h`
 
 **Example usage**
 
-**TODO:** Add information about example usage
-
 .. code-block::
 
-   cellmaps_generate_hierarchycmd.py # TODO Add other needed arguments here
-
+   cellmaps_generate_hierarchycmd.py ./cellmaps_generate_hierarchy --coembedding_dirs ./cellmaps_coembedding_outdir 
 
 Via Docker
 ~~~~~~~~~~~~~~~~~~~~~~
 
 **Example usage**
 
-**TODO:** Add information about example usage
-
 
 .. code-block::
 
-   docker run -v `pwd`:`pwd` -w `pwd` idekerlab/cellmaps_generate_hierarchy:0.1.0 cellmaps_generate_hierarchycmd.py # TODO Add other needed arguments here
+   docker run -v `pwd`:`pwd` -w `pwd` idekerlab/cellmaps_generate_hierarchy:0.1.0 cellmaps_generate_hierarchycmd.py ./cellmaps_generate_hierarchy --coembedding_dirs ./cellmaps_coembedding_outdir 
 
 
 Credits
