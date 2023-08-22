@@ -28,6 +28,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = ['cellmaps_utils',
+                'requests',
                 'tqdm',
                 'pandas',
                 'numpy',
@@ -37,7 +38,7 @@ requirements = ['cellmaps_utils',
 
 setup_requirements = []
 
-test_requirements = []
+test_requirements = ['requests_mock']
 
 setup(
     author=author,

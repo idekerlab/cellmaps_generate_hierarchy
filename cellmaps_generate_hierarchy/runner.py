@@ -28,6 +28,7 @@ class CellmapsGenerateHierarchy(object):
                  name=None,
                  organization_name=None,
                  project_name=None,
+                 layoutalgo=None,
                  provenance_utils=ProvenanceUtil(),
                  input_data_dict=None):
         """
@@ -55,8 +56,29 @@ class CellmapsGenerateHierarchy(object):
         self._name = name
         self._project_name = project_name
         self._organization_name = organization_name
+        self._keywords = None
+        self._description = None
         self._input_data_dict = input_data_dict
         self._provenance_utils = provenance_utils
+        self._layoutalgo = layoutalgo
+
+    def _update_provenance_fields(self):
+        """
+
+        :return:
+        """
+
+        prov_attrs = self._provenance_utils.get_merged_rocrate_provenance_attrs(self._inputdirs,
+                                                                                override_name=self._name,
+                                                                                override_project_name=self._project_name,
+                                                                                override_organization_name=self._organization_name,
+                                                                                extra_keywords=['merged embedding'])
+
+        self._name = prov_attrs.get_name()
+        self._organization_name = prov_attrs.get_organization_name()
+        self._project_name = prov_attrs.get_project_name()
+        self._keywords = prov_attrs.get_keywords()
+        self._description = prov_attrs.get_description()
 
     def _create_rocrate(self):
         """
@@ -65,26 +87,18 @@ class CellmapsGenerateHierarchy(object):
         :raises CellMapsProvenanceError: If there is an error
         """
         logger.debug('Registering rocrate with FAIRSCAPE')
-        for inputdir in self._inputdirs:
-            name, proj_name, org_name = self._provenance_utils.get_name_project_org_of_rocrate(inputdir)
 
-            if self._name is not None:
-                name = self._name
-
-            if self._organization_name is not None:
-                org_name = self._organization_name
-
-            if self._project_name is not None:
-                proj_name = self._project_name
-            try:
-                self._provenance_utils.register_rocrate(self._outdir,
-                                                        name=name,
-                                                        organization_name=org_name,
-                                                        project_name=proj_name)
-            except TypeError as te:
-                raise CellmapsGenerateHierarchyError('Invalid provenance: ' + str(te))
-            except KeyError as ke:
-                raise CellmapsGenerateHierarchyError('Key missing in provenance: ' + str(ke))
+        try:
+            self._provenance_utils.register_rocrate(self._outdir,
+                                                    name=self._name,
+                                                    organization_name=self._organization_name,
+                                                    project_name=self._project_name,
+                                                    description=self._description,
+                                                    keywords=self._keywords)
+        except TypeError as te:
+            raise CellmapsGenerateHierarchyError('Invalid provenance: ' + str(te))
+        except KeyError as ke:
+            raise CellmapsGenerateHierarchyError('Key missing in provenance: ' + str(ke))
 
     def _register_software(self):
         """
@@ -92,12 +106,17 @@ class CellmapsGenerateHierarchy(object):
 
         :raises CellMapsImageEmbeddingError: If fairscape call fails
         """
+        software_keywords = self._keywords
+        software_keywords.extend(['tools', cellmaps_generate_hierarchy.__name__])
+        software_description = self._description + ' ' + \
+                               cellmaps_generate_hierarchy.__description__
         self._softwareid = self._provenance_utils.register_software(self._outdir,
                                                                     name=cellmaps_generate_hierarchy.__name__,
-                                                                    description=cellmaps_generate_hierarchy.__description__,
+                                                                    description=software_description,
                                                                     author=cellmaps_generate_hierarchy.__author__,
                                                                     version=cellmaps_generate_hierarchy.__version__,
-                                                                    file_format='.py',
+                                                                    file_format='py',
+                                                                    keywords=software_keywords,
                                                                     url=cellmaps_generate_hierarchy.__repo_url__)
 
     def _register_computation(self, generated_dataset_ids=[]):
@@ -112,11 +131,16 @@ class CellmapsGenerateHierarchy(object):
                 input_dataset_ids.append(self._provenance_utils.get_id_of_rocrate(i_dir))
         else:
             input_dataset_ids.append(self._provenance_utils.get_id_of_rocrate(self._inputdirs))
+
+        keywords = self._keywords
+        keywords.extend(['computation'])
+        description = self._description + ' run of ' + cellmaps_generate_hierarchy.__name__
         self._provenance_utils.register_computation(self._outdir,
                                                     name=cellmaps_generate_hierarchy.__name__ + ' computation',
                                                     run_by=str(self._provenance_utils.get_login()),
                                                     command=str(self._input_data_dict),
-                                                    description='run of ' + cellmaps_generate_hierarchy.__name__,
+                                                    description=description,
+                                                    keywords=keywords,
                                                     used_software=[self._softwareid],
                                                     used_dataset=input_dataset_ids,
                                                     generated=generated_dataset_ids)
@@ -159,9 +183,15 @@ class CellmapsGenerateHierarchy(object):
         with open(dest_path, 'w') as f:
             json.dump(ppi_network.to_cx(), f)
 
+        description = self._description
+        description += ' PPI Network file'
+        keywords = self._keywords
+        keywords.extend(['file'])
+
         # register ppi network file with fairscape
         data_dict = {'name': os.path.basename(dest_path) + ' PPI network file',
-                     'description': 'PPI Network file',
+                     'description': description,
+                     'keywords': keywords,
                      'data-format': 'CX',
                      'author': cellmaps_generate_hierarchy.__name__,
                      'version': cellmaps_generate_hierarchy.__version__,
@@ -192,9 +222,15 @@ class CellmapsGenerateHierarchy(object):
                 # todo get weight
                 f.write(name_dict[edge_obj['s']] + '\t' + str(name_dict[edge_obj['t']]) + '\n')
 
+        description = self._description
+        description += ' PPI Edgelist file'
+        keywords = self._keywords
+        keywords.extend(['file'])
+
         # register ppi network file with fairscape
         data_dict = {'name': os.path.basename(dest_path) + ' PPI edgelist file',
-                     'description': 'PPI Edgelist file',
+                     'description': description,
+                     'keywords': keywords,
                      'data-format': 'tsv',
                      'author': cellmaps_generate_hierarchy.__name__,
                      'version': cellmaps_generate_hierarchy.__version__,
@@ -214,9 +250,14 @@ class CellmapsGenerateHierarchy(object):
         hierarchy_out_file = self.get_hierarchy_dest_file(hierarchy) + constants.CX_SUFFIX
         with open(hierarchy_out_file, 'w') as f:
             json.dump(hierarchy.to_cx(), f)
+            description = self._description
+            description += ' Hierarchy network file'
+            keywords = self._keywords
+            keywords.extend(['file', 'hierarchy'])
             # register ppi network file with fairscape
             data_dict = {'name': os.path.basename(hierarchy_out_file) + ' Hierarchy network file',
-                         'description': 'Hierarchy network file',
+                         'description': description,
+                         'keywords': keywords,
                          'data-format': 'CX',
                          'author': cellmaps_generate_hierarchy.__name__,
                          'version': cellmaps_generate_hierarchy.__version__,
@@ -248,6 +289,7 @@ class CellmapsGenerateHierarchy(object):
                                            start_time=self._start_time,
                                            data={'commandlineargs': self._input_data_dict},
                                            version=cellmaps_generate_hierarchy.__version__)
+            self._update_provenance_fields()
 
             self._create_rocrate()
 
@@ -265,6 +307,12 @@ class CellmapsGenerateHierarchy(object):
 
             # generate hierarchy
             hierarchy = self._hiergen.get_hierarchy(ppi_network_prefix_paths)
+
+            if self._layoutalgo is not None:
+                logger.debug('Applying layout')
+                self._layoutalgo.add_layout(network=hierarchy)
+            else:
+                logger.debug('No layout algorithm set, skipping')
 
             # write out hierarchy
             dataset_id, hierarchy_out_file = self._write_and_register_hierarchy_network(hierarchy)

@@ -29,9 +29,6 @@ Dependencies
 * `HiDeF <https://pypi.org/project/hidef>`__
    **Note:** If running HiDeF in parallel on same machine it must be built directly from `source <https://github.com/fanzheng10/HiDeF>`__
 
-
-
-
 Compatibility
 -------------
 
