@@ -147,6 +147,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
             mockprov = MagicMock()
             mockprov.register_dataset = MagicMock()
             mockprov.register_dataset.side_effect = ['XXX', 'YYY']
+            mockprov.get_default_date_format_str = MagicMock(return_value='%Y-%m-%d')
             gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov,
                                                author='author',
                                                version='version')
@@ -177,7 +178,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
                          'data-format': 'tsv',
                          'author': 'author',
                          'version': 'version',
-                         'date-published': date.today().strftime('%m-%d-%Y')}
+                         'date-published': date.today().strftime('%Y-%m-%d')}
             mockprov.register_dataset.assert_any_call(temp_dir,
                                                       source_file=one_edge_net_file +
                                                                   CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV,
@@ -190,7 +191,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
                          'data-format': 'tsv',
                          'author': 'author',
                          'version': 'version',
-                         'date-published': date.today().strftime('%m-%d-%Y')}
+                         'date-published': date.today().strftime('%Y-%m-%d')}
             mockprov.register_dataset.assert_any_call(temp_dir,
                                                       source_file=two_edge_net_file +
                                                       CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV,
@@ -205,6 +206,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
             mockprov = MagicMock()
             mockprov.register_dataset = MagicMock()
             mockprov.register_dataset.side_effect = ['X', 'Y', 'Z']
+            mockprov.get_default_date_format_str = MagicMock(return_value='%Y-%m-%d')
             gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov)
             gen._register_hidef_output_files(temp_dir)
             self.assertEqual(['X', 'Y', 'Z'], gen.get_generated_dataset_ids())
@@ -215,7 +217,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
                          'data-format': 'tsv',
                          'author': 'cellmaps_generate_hierarchy',
                          'version': cellmaps_generate_hierarchy.__version__,
-                         'date-published': date.today().strftime('%m-%d-%Y')}
+                         'date-published': date.today().strftime('%Y-%m-%d')}
             mockprov.register_dataset.assert_any_call(temp_dir,
                                                       source_file=os.path.join(temp_dir,
                                                                                CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX +
@@ -253,6 +255,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
 
             mockprov = MagicMock()
             mockprov.register_dataset = MagicMock(return_val='xxx')
+            mockprov.get_default_date_format_str = MagicMock(return_value='%Y-%m-%d')
             gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov,
                                                author='author',
                                                version='version')
