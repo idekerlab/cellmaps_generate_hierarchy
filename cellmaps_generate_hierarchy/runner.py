@@ -72,7 +72,7 @@ class CellmapsGenerateHierarchy(object):
                                                                                 override_name=self._name,
                                                                                 override_project_name=self._project_name,
                                                                                 override_organization_name=self._organization_name,
-                                                                                extra_keywords=['merged embedding'])
+                                                                                extra_keywords=['hierarchy', 'model'])
 
         self._name = prov_attrs.get_name()
         self._organization_name = prov_attrs.get_organization_name()
@@ -136,7 +136,7 @@ class CellmapsGenerateHierarchy(object):
         keywords.extend(['computation'])
         description = self._description + ' run of ' + cellmaps_generate_hierarchy.__name__
         self._provenance_utils.register_computation(self._outdir,
-                                                    name=cellmaps_generate_hierarchy.__name__ + ' computation',
+                                                    name=cellmaps_generate_hierarchy.__computation_name__,
                                                     run_by=str(self._provenance_utils.get_login()),
                                                     command=str(self._input_data_dict),
                                                     description=description,
@@ -195,7 +195,7 @@ class CellmapsGenerateHierarchy(object):
                      'data-format': 'CX',
                      'author': cellmaps_generate_hierarchy.__name__,
                      'version': cellmaps_generate_hierarchy.__version__,
-                     'date-published': date.today().strftime('%m-%d-%Y')}
+                     'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
         return self._provenance_utils.register_dataset(self._outdir,
                                                        source_file=dest_path,
                                                        data_dict=data_dict)
@@ -234,7 +234,7 @@ class CellmapsGenerateHierarchy(object):
                      'data-format': 'tsv',
                      'author': cellmaps_generate_hierarchy.__name__,
                      'version': cellmaps_generate_hierarchy.__version__,
-                     'date-published': date.today().strftime('%m-%d-%Y')}
+                     'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
         dataset_id = self._provenance_utils.register_dataset(self._outdir,
                                                              source_file=dest_path,
                                                              data_dict=data_dict)
@@ -255,13 +255,13 @@ class CellmapsGenerateHierarchy(object):
             keywords = self._keywords
             keywords.extend(['file', 'hierarchy'])
             # register ppi network file with fairscape
-            data_dict = {'name': os.path.basename(hierarchy_out_file) + ' Hierarchy network file',
+            data_dict = {'name': 'Output Dataset',
                          'description': description,
                          'keywords': keywords,
                          'data-format': 'CX',
                          'author': cellmaps_generate_hierarchy.__name__,
                          'version': cellmaps_generate_hierarchy.__version__,
-                         'date-published': date.today().strftime('%m-%d-%Y')}
+                         'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
             dataset_id = self._provenance_utils.register_dataset(self._outdir,
                                                                  source_file=hierarchy_out_file,
                                                                  data_dict=data_dict)
@@ -305,8 +305,8 @@ class CellmapsGenerateHierarchy(object):
                 generated_dataset_ids.append(self._write_and_register_ppi_network_as_cx(ppi_network,
                                                                                         dest_path=cx_path))
 
-            # generate hierarchy
-            hierarchy = self._hiergen.get_hierarchy(ppi_network_prefix_paths)
+            # generate hierarchy and get parent ppi
+            hierarchy, parent_ppi = self._hiergen.get_hierarchy(ppi_network_prefix_paths)
 
             if self._layoutalgo is not None:
                 logger.debug('Applying layout')
