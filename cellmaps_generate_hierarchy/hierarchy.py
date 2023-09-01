@@ -46,8 +46,9 @@ class CXHierarchyGenerator(object):
         Gets hierarchy
 
 
-        :return:
-        :rtype: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :return: (hierarchy as :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`,
+                  parent ppi as :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`)
+        :rtype: tuple
         """
         raise NotImplementedError('Subclasses need to implement')
 
@@ -398,7 +399,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                              'data-format': 'tsv',
                              'author': str(self._author),
                              'version': str(self._version),
-                             'date-published': date.today().strftime('%m-%d-%Y')}
+                             'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
                 dataset_id = self._provenance_utils.register_dataset(os.path.dirname(dest_path),
                                                                      source_file=dest_path,
                                                                      data_dict=data_dict)
@@ -427,7 +428,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                          'data-format': hidef_file[1],
                          'author': str(self._author),
                          'version': str(self._version),
-                         'date-published': date.today().strftime('%m-%d-%Y')}
+                         'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
             dataset_id = self._provenance_utils.register_dataset(os.path.dirname(outfile),
                                                                  source_file=outfile,
                                                                  data_dict=data_dict)
@@ -448,8 +449,18 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         """
         network.set_network_attribute(name='prov:wasGeneratedBy',
                                       values=self._author + ' ' + self._version)
+        rocrate_id = self._provenance_utils.get_id_of_rocrate(os.path.dirname(path))
         network.set_network_attribute(name='prov:wasDerivedFrom',
-                                      values='RO-crate: ' + os.path.dirname(path))
+                                      values='RO-crate: ' + str(rocrate_id))
+
+        prov_utils = self._provenance_utils.get_rocrate_provenance_attributes(os.path.dirname(path))
+        network.set_network_attribute(name='description',
+                                      values=str(prov_utils.get_description() + ' Cell Map Hierarchy'))
+        if prov_utils.get_keywords() is None:
+            keyword_subset = []
+        else:
+            keyword_subset = prov_utils.get_keywords()[:6]
+        network.set_name(prov_utils.get_name() + ' - ' + ' '.join(keyword_subset) + ' hierarchy')
 
     def get_hierarchy(self, networks):
         """
@@ -474,7 +485,10 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         :type networks: list
         :raises CellmapsGenerateHierarchyError: If there was an error
         :return: Resulting hierarchy or ``None`` if no hierarchy from HiDeF
-        :rtype: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :return: (hierarchy as :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`,
+                  parent ppi as :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`)
+                  or None, None if not created
+        :rtype: tuple
         """
         outdir = os.path.dirname(networks[0])
 
@@ -514,7 +528,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                          'data-format': 'json',
                          'author': str(self._author),
                          'version': str(self._version),
-                         'date-published': date.today().strftime('%m-%d-%Y')}
+                         'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
             dataset_id = self._provenance_utils.register_dataset(os.path.dirname(cdaps_out_file),
                                                                  source_file=cdaps_out_file,
                                                                  data_dict=data_dict)
@@ -523,8 +537,8 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
             cd = cdapsutil.CommunityDetection(runner=cdapsutil.ExternalResultsRunner())
             hier = cd.run_community_detection(largest_net, algorithm=cdaps_out_file)
             self._annotate_hierarchy(network=hier, path=largest_net_path)
-            return hier
+            return hier, largest_net
 
         except FileNotFoundError as fe:
             logger.error('No output from hidef: ' + str(fe) + '\n')
-        return None
+        return None, None
