@@ -14,6 +14,7 @@ from cellmaps_generate_hierarchy.hierarchy import CDAPSHiDeFHierarchyGenerator
 from cellmaps_generate_hierarchy.maturehierarchy import HiDeFHierarchyRefiner
 from cellmaps_generate_hierarchy.runner import CellmapsGenerateHierarchy
 from cellmaps_generate_hierarchy.layout import CytoscapeJSBreadthFirstLayout
+from cellmaps_generate_hierarchy.hcx import HCXFromCDAPSCXHierarchy
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,13 @@ def _parse_arguments(desc, args):
                              'another PPI network')
     parser.add_argument('--skip_layout', action='store_true',
                         help='If set, skips layout of hierarchy step')
+    parser.add_argument('--ndexserver', default='idekerlab.ndexbio.org',
+                        help='Server where hierarchy can be converted to HCX and saved')
+    parser.add_argument('--ndexuser',
+                        help='NDEx user account')
+    parser.add_argument('--ndexpassword',
+                        help='NDEx password. This can be the password, '
+                             'a file containing the password')
     parser.add_argument('--logconf', default=None,
                         help='Path to python logging configuration file in '
                              'this format: https://docs.python.org/3/library/'
@@ -135,8 +143,13 @@ def main(args):
                                         min_diff=theargs.min_diff,
                                         provenance_utils=provenance)
 
+        converter = HCXFromCDAPSCXHierarchy(ndexserver=theargs.ndexserver,
+                                            ndexuser=theargs.ndexuser,
+                                            ndexpassword=theargs.ndexpassword)
+
         hiergen = CDAPSHiDeFHierarchyGenerator(author='cellmaps_generate_hierarchy',
                                                refiner=refiner,
+                                               hcxconverter=converter,
                                                version=cellmaps_generate_hierarchy.__version__,
                                                provenance_utils=provenance)
         if theargs.skip_layout is True:
@@ -144,12 +157,17 @@ def main(args):
         else:
             layoutalgo = CytoscapeJSBreadthFirstLayout()
 
+        # we dont want to log the password anywhere so toss it from the dict
+        input_data_dict = theargs.__dict__.copy()
+        if 'ndexpassword' in input_data_dict:
+            input_data_dict['ndexpassword'] = 'PASSWORD REMOVED FOR SECURITY REASONS'
+
         return CellmapsGenerateHierarchy(outdir=theargs.outdir,
                                          inputdirs=theargs.coembedding_dirs,
                                          ppigen=ppigen,
                                          hiergen=hiergen,
                                          layoutalgo=layoutalgo,
-                                         input_data_dict=theargs.__dict__,
+                                         input_data_dict=input_data_dict,
                                          provenance_utils=provenance).run()
     except Exception as e:
         logger.exception('Caught exception: ' + str(e))

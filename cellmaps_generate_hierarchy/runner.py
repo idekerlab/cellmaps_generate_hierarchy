@@ -39,7 +39,7 @@ class CellmapsGenerateHierarchy(object):
         :param ppigen: PPI Network Generator object, should be a subclass
         :type ppigen: :py:class:`~cellmaps_generate_hierarchy.ppi.PPINetworkGenerator`
         :param hiergen: Hierarchy Generator object, should be a subclass
-        :type hiergen: :py:class:`~cellmaps_generate_hierarchy.CXHierarchyGenerator`
+        :type hiergen: :py:class:`~cellmaps_generate_hierarchy.HierarchyGenerator`
         :param name:
         :param organization_name:
         :param project_name:
@@ -158,18 +158,25 @@ class CellmapsGenerateHierarchy(object):
         return os.path.join(self._outdir, constants.PPI_NETWORK_PREFIX +
                             '_cutoff_' + str(cutoff))
 
-    def get_hierarchy_dest_file(self, hierarchy):
+    def get_hierarchy_dest_file(self):
         """
         Creates file path prefix for hierarchy
 
         Example path: ``/tmp/foo/hierarchy``
 
-        :param hierarchy: Hierarchy Network
-        :type hierarchy: :py:class:`ndex2.nice_cx_network.NiceCXNetwork`
         :return: Prefix path on filesystem to write Hierarchy Network
         :rtype: str
         """
         return os.path.join(self._outdir, constants.HIERARCHY_NETWORK_PREFIX)
+
+    def get_hierarchy_parent_network_dest_file(self):
+        """
+        Creates file path prefix for hierarchy parent network
+
+        Example path: ``/tmp/foo/hierarchy_parent``
+        :return:
+        """
+        return os.path.join(self._outdir, 'hierarchy_parent')
 
     def _write_and_register_ppi_network_as_cx(self, ppi_network, dest_path=None):
         """
@@ -240,32 +247,78 @@ class CellmapsGenerateHierarchy(object):
                                                              data_dict=data_dict)
         return dataset_id
 
-    def _write_and_register_hierarchy_network(self, hierarchy):
+    def _write_hierarchy_network(self, hierarchy=None):
         """
 
         :param network:
         :return:
         """
         logger.debug('Writing hierarchy')
-        hierarchy_out_file = self.get_hierarchy_dest_file(hierarchy) + constants.CX_SUFFIX
+        suffix = '.hcx' # todo put this into cellmaps_utils.constants
+        hierarchy_out_file = self.get_hierarchy_dest_file(hierarchy) + suffix
         with open(hierarchy_out_file, 'w') as f:
-            json.dump(hierarchy.to_cx(), f)
+            json.dump(hierarchy, f)
+
+        return hierarchy_out_file
+
+    def _register_hierarchy_network(self, hierarchy_out_file=None, hierarchyurl=None):
+        """
+
+        :param network:
+        :return:
+        """
+        logger.debug('Register hierarchy with fairscape')
+
+        description = self._description
+        description += ' Hierarchy network file'
+        keywords = self._keywords
+        keywords.extend(['file', 'hierarchy', 'network', 'HCX'])
+        # register hierarchy network file with fairscape
+        # The name must be Output Dataset so that the cm4ai portal knows to
+        # grab the URL link
+        data_dict = {'name': 'Output Dataset',
+                     'description': description,
+                     'keywords': keywords,
+                     'data-format': 'HCX',
+                     'author': cellmaps_generate_hierarchy.__name__,
+                     'version': cellmaps_generate_hierarchy.__version__,
+                     'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
+        if hierarchyurl is not None:
+            data_dict['url'] = hierarchyurl
+        dataset_id = self._provenance_utils.register_dataset(self._outdir,
+                                                             source_file=hierarchy_out_file,
+                                                             data_dict=data_dict)
+        return dataset_id
+
+    def _write_and_register_hierarchy_parent_network(self, parent=None, parenturl=None):
+        """
+
+        :param network:
+        :return:
+        """
+        logger.debug('Writing hierarchy parent')
+        suffix = '.hcx'  # todo put this into cellmaps_utils.constants
+        parent_out_file = self.get_hierarchy_parent_dest_file(parent) + suffix
+        with open(parent_out_file, 'w') as f:
+            json.dump(parent, f)
             description = self._description
-            description += ' Hierarchy network file'
+            description += ' Hierarchy parent network file'
             keywords = self._keywords
-            keywords.extend(['file', 'hierarchy'])
-            # register ppi network file with fairscape
-            data_dict = {'name': 'Output Dataset',
+            keywords.extend(['file', 'parent', 'interactome', 'ppi', 'network', 'CX2'])
+
+            data_dict = {'name': 'Hierarchy parent network',
                          'description': description,
                          'keywords': keywords,
-                         'data-format': 'CX',
+                         'data-format': 'CX2',
                          'author': cellmaps_generate_hierarchy.__name__,
                          'version': cellmaps_generate_hierarchy.__version__,
                          'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
+            if parenturl is not None:
+                data_dict['url'] = parenturl
             dataset_id = self._provenance_utils.register_dataset(self._outdir,
-                                                                 source_file=hierarchy_out_file,
+                                                                 source_file=parent_out_file,
                                                                  data_dict=data_dict)
-        return dataset_id, hierarchy_out_file
+        return dataset_id
 
     def run(self):
         """
@@ -306,7 +359,8 @@ class CellmapsGenerateHierarchy(object):
                                                                                         dest_path=cx_path))
 
             # generate hierarchy and get parent ppi
-            hierarchy, parent_ppi = self._hiergen.get_hierarchy(ppi_network_prefix_paths)
+            hierarchy, parent_ppi, hierarchyurl,\
+            parenturl = self._hiergen.get_converted_hierarchy(ppi_network_prefix_paths)
 
             if self._layoutalgo is not None:
                 logger.debug('Applying layout')
@@ -315,8 +369,14 @@ class CellmapsGenerateHierarchy(object):
                 logger.debug('No layout algorithm set, skipping')
 
             # write out hierarchy
-            dataset_id, hierarchy_out_file = self._write_and_register_hierarchy_network(hierarchy)
-            generated_dataset_ids.append(dataset_id)
+            generated_dataset_ids.append(self._write_hierarchy_network(hierarchy))
+
+            # write out parent network and register with fairscape
+            generated_dataset_ids.append(self._write_and_register_hierarchy_parent_network(parent=parent_ppi,
+                                                                                           parenturl=parenturl))
+
+            generated_dataset_ids.append(self._register_hierarchy_network(hierarchy,
+                                                                          hierarchyurl=hierarchyurl))
 
             # add datasets created by hiergen object
             generated_dataset_ids.extend(self._hiergen.get_generated_dataset_ids())

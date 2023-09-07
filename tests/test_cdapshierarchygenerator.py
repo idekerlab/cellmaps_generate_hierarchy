@@ -18,7 +18,7 @@ from cellmaps_utils import constants
 import cellmaps_generate_hierarchy
 from cellmaps_generate_hierarchy.hierarchy import CDAPSHiDeFHierarchyGenerator
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
-from cellmaps_generate_hierarchy.hierarchy import CXHierarchyGenerator
+from cellmaps_generate_hierarchy.hierarchy import HierarchyGenerator
 
 
 class TestCDAPSHierarchyGenerator(unittest.TestCase):
@@ -31,7 +31,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
         """Tear down test fixtures, if any."""
 
     def test_cx_hierarchy_generator(self):
-        gen = CXHierarchyGenerator()
+        gen = HierarchyGenerator()
         self.assertEqual([], gen.get_generated_dataset_ids())
         try:
             gen.get_hierarchy([])

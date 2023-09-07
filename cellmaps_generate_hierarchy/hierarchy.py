@@ -15,7 +15,7 @@ from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyErro
 logger = logging.getLogger(__name__)
 
 
-class CXHierarchyGenerator(object):
+class HierarchyGenerator(object):
     """
     Base class for generating hierarchy
     that is output in CX format following
@@ -46,14 +46,14 @@ class CXHierarchyGenerator(object):
         Gets hierarchy
 
 
-        :return: (hierarchy as :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`,
-                  parent ppi as :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`)
+        :return: (hierarchy as :py:class:`list`,
+                  parent ppi as :py:class:`list`)
         :rtype: tuple
         """
         raise NotImplementedError('Subclasses need to implement')
 
 
-class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
+class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
     """
     Generates hierarchy using HiDeF
     """
@@ -77,6 +77,7 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
     def __init__(self, hidef_cmd='hidef_finder.py',
                  provenance_utils=ProvenanceUtil(),
                  refiner=None,
+                 hcxconverter=None,
                  author='cellmaps_generate_hierarchy',
                  version=cellmaps_generate_hierarchy.__version__):
         """
@@ -92,6 +93,9 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
                          author=author,
                          version=version)
         self._refiner = refiner
+        if hcxconverter is None:
+            raise CellmapsGenerateHierarchyError('HCX converter must be set')
+        self._hcxconverter = hcxconverter
         self._python = sys.executable
         if os.sep not in hidef_cmd:
             self._hidef_cmd = os.path.join(os.path.dirname(self._python), hidef_cmd)
@@ -485,8 +489,9 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
         :type networks: list
         :raises CellmapsGenerateHierarchyError: If there was an error
         :return: Resulting hierarchy or ``None`` if no hierarchy from HiDeF
-        :return: (hierarchy as :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`,
-                  parent ppi as :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`)
+        :return: (hierarchy as list,
+                  parent ppi as list,
+                  hierarchyurl, parenturl)
                   or None, None if not created
         :rtype: tuple
         """
@@ -537,8 +542,9 @@ class CDAPSHiDeFHierarchyGenerator(CXHierarchyGenerator):
             cd = cdapsutil.CommunityDetection(runner=cdapsutil.ExternalResultsRunner())
             hier = cd.run_community_detection(largest_net, algorithm=cdaps_out_file)
             self._annotate_hierarchy(network=hier, path=largest_net_path)
-            return hier, largest_net
 
+            return self._hcxconverter.get_converted_hierarchy(hierarchy=hier,
+                                                              parent_network=largest_net)
         except FileNotFoundError as fe:
             logger.error('No output from hidef: ' + str(fe) + '\n')
         return None, None
