@@ -19,14 +19,124 @@ class HCXFromCDAPSCXHierarchy(object):
         """
         Constructor
         """
-        pass
+        self._server = ndexserver
+        self._user = ndexuser
+        self._password = ndexpassword
+        self._ndexclient = None
+        self._initialize_ndex_client()
+
+    def _initialize_ndex_client(self):
+        """
+        Creates NDEx client
+        :return:
+        """
+        self._ndexclient = ndex2.client.Ndex2(host=self._server,
+                                              username=self._user,
+                                              password=self._password,
+                                              skip_version_check=True)
+
+    def _save_network(self, network, visibility=None):
+        """
+
+        :param network: Network to save
+        :type network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :param visibility: should be either ``PUBLIC`` or ``PRIVATE``
+        :type visibility: str
+        :return: NDEX UUID of network
+        :rtype: str
+        """
+        res = self._ndexclient.save_new_network(network.to_cx(),
+                                                visibility=visibility)
+        if isinstance(res, str):
+            return res[res.rfind('/') + 1:]
+        raise CellmapsGenerateHierarchyError('Expected a str, but got this: ' + str(res))
+
+    def _get_root_nodes(self, hierarchy):
+        """
+        In CDAPS the root node has only source edges to children
+        so this function counts up number of target edges for each node
+        and the one with 0 is the root
+
+        :param hierarchy:
+        :type hierarchy: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :return: root node ids
+        :rtype: set
+        """
+        all_nodes = set()
+        for node_id, node_obj in hierarchy.get_nodes():
+            all_nodes.add(node_id)
+
+        nodes_with_targets = set()
+        for edge_id, edge_obj in hierarchy.get_edges():
+            nodes_with_targets.add(edge_obj['t'])
+        return all_nodes.difference(nodes_with_targets)
+
+    def _add_isroot_node_attribute(self, hierarchy, root_nodes=None):
+        """
+        Using the **root_nodes** set or list, add
+        ``HCX::isRoot`` to
+        every node setting value to ``True``
+        if node id is in **root_nodes**
+        otherwise set the value to ``False``
+
+        :param hierarchy:
+        :type hierarchy: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        """
+        attr_name = 'HCX::isRoot'
+        for node_id, node_obj in hierarchy.get_nodes():
+            if node_id in root_nodes:
+                hierarchy.set_node_attribute(node_id, attr_name,
+                                             values='true',
+                                             type='boolean',
+                                             overwrite=True)
+            else:
+                hierarchy.set_node_attribute(node_id, attr_name,
+                                             values='false',
+                                             type='boolean',
+                                             overwrite=True)
+
+    def _add_hierarchy_network_attributes(self, hierarchy, interactome_id=None):
+        """
+
+        :param hierarchy:
+        :param interactome_id:
+        :return:
+        """
+        hierarchy.set_network_attribute('ndexSchema', values='hierarchy_v0.1',
+                                        type='string')
+        hierarchy.set_network_attribute('HCX::modelFileCount',
+                                        values='2',
+                                        type='integer')
+        hierarchy.set_network_attribute('HCX::interactionNetworkUUID',
+                                        values=interactome_id,
+                                        type='string')
+        if self._server is None:
+            server = 'www.ndexbio.org'
+        else:
+            server = self._server
+        hierarchy.set_network_attribute('HCX::interactionNetworkHost',
+                                        values=server,
+                                        type='string')
+
+    def _get_mapping_of_node_names_to_ids(self, network):
+        """
+        Gets a mapping of node names to node ids
+
+        :param network:
+        :type network:
+        :return: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        """
+        node_map = {}
+        for node_id, node_obj in network.get_nodes():
+            node_map[node_obj['n']] = node_id
+        return node_map
 
     def get_converted_hierarchy(self, hierarchy=None, parent_network=None):
         """
         Converts hierarchy in CX CDAPS format into HCX format and parent network
         from CX format into CX2 format
 
-        For the parent interactome simply upload the network to NDEx and also use the
+        For the parent network aka interactome simply upload the network to NDEx and also use the
         python client to get CX2 as a list object via json load and set that as 2nd element
         in tuple returned
 
@@ -36,15 +146,17 @@ class HCXFromCDAPSCXHierarchy(object):
         uploaded to NDEx.
 
         For necessary annotations see: https://cytoscape.org/cx/cx2/hcx-specification/
+
         and for code implementing these annotations see:
         https://github.com/idekerlab/hiviewutils/blob/main/hiviewutils/hackedhcx.py
 
         Once the hierarchy is annotated upload it to NDEx and then use the python client
         to get CX2 as a list object via json load and set that as 1st element in tuple
-        returned.
+        returned. Uploading networks to NDEx returns a URL that can be parsed to get UUID of
+        the networks
 
-        The 3rd, 4th elements returned are the user viewable URLs of the hierarchy and
-        parent networks put onto NDEx
+        The 3rd, 4th elements returned should be the user viewable URLs of the hierarchy
+        and parent networks put onto NDEx
 
         :param hierarchy: Hierarchy network
         :type hierarchy: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
