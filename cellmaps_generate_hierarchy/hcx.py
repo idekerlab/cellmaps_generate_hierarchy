@@ -131,6 +131,37 @@ class HCXFromCDAPSCXHierarchy(object):
             node_map[node_obj['n']] = node_id
         return node_map
 
+    def _add_members_node_attribute(self, hierarchy,
+                                    interactome_name_map=None,
+                                    memberlist_attr_name='CD_MemberList'):
+        """
+
+        :param hierarchy:
+        :return:
+        """
+        if interactome_name_map is None:
+            raise CellmapsGenerateHierarchyError('interactome name map is None')
+
+        for node_id, node_obj in hierarchy.get_nodes():
+            memberlist = hierarchy.get_node_attribute(node_id,
+                                                      memberlist_attr_name)
+            if memberlist is None or memberlist == (None, None):
+                logger.warning('no memberlist for node')
+                continue
+            member_ids = set()
+            for member in memberlist['v'].split(' '):
+                if member in interactome_name_map:
+                    member_ids.add(str(interactome_name_map[member]))
+                else:
+                    logger.warning(member + ' not in interactome. Skipping')
+
+            hierarchy.set_node_attribute(node_id, 'HCX::members',
+                                         values=list(member_ids), type='list_of_long',
+                                         overwrite=True)
+
+    def _generate_url(self, uuid):
+        return "https://idekerlab.ndexbio.org/cytoscape/network/" + str(uuid)
+
     def get_converted_hierarchy(self, hierarchy=None, parent_network=None):
         """
         Converts hierarchy in CX CDAPS format into HCX format and parent network
@@ -166,4 +197,27 @@ class HCXFromCDAPSCXHierarchy(object):
                   parent ppi as :py:class:`list`, hierarchyurl, parenturl)
         :rtype: tuple
         """
-        return None, None, None, None
+        # save interactome to NDEx
+        interactome_id = self._save_network(parent_network)
+
+        # annotate hierarchy
+        self._add_hierarchy_network_attributes(hierarchy,
+                                               interactome_id=interactome_id)
+
+        root_nodes = self._get_root_nodes(hierarchy)
+
+        self._add_isroot_node_attribute(hierarchy, root_nodes=root_nodes)
+
+        # get mapping of node names to node ids
+        interactome_name_map = self._get_mapping_of_node_names_to_ids(parent_network)
+
+        self._add_members_node_attribute(hierarchy,
+                                         interactome_name_map=interactome_name_map)
+
+        # save hierarchy to NDEx
+        hierarchy_id = self._save_network(hierarchy)
+
+        interactome_url = self._generate_url(interactome_id)
+        hierarchy_url = self._generate_url(hierarchy_id)
+
+        return hierarchy_id, interactome_id, hierarchy_url, interactome_url
