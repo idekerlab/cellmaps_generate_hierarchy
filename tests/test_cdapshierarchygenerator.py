@@ -16,6 +16,7 @@ from io import StringIO
 
 from cellmaps_utils import constants
 import cellmaps_generate_hierarchy
+from cellmaps_generate_hierarchy.hcx import HCXFromCDAPSCXHierarchy
 from cellmaps_generate_hierarchy.hierarchy import CDAPSHiDeFHierarchyGenerator
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
 from cellmaps_generate_hierarchy.hierarchy import HierarchyGenerator
@@ -48,14 +49,16 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
                 f.write('Cluster2-9\t4\t0 1 19 48\t55\n')
                 f.write('Cluster1-0\t4\t17 26 27 64\t11\n')
 
-            gen = CDAPSHiDeFHierarchyGenerator()
+            converter = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+            gen = CDAPSHiDeFHierarchyGenerator(hcxconverter=converter)
             self.assertEqual(77, gen._get_max_node_id(nodes_file))
 
         finally:
             shutil.rmtree(temp_dir)
 
     def test_write_members_for_row(self):
-        gen = CDAPSHiDeFHierarchyGenerator()
+        converter = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        gen = CDAPSHiDeFHierarchyGenerator(hcxconverter=converter)
         data = ''
         out_stream = StringIO(data)
         gen.write_members_for_row(out_stream,
@@ -64,7 +67,8 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
                          out_stream.getvalue())
 
     def test_update_cluster_node_map(self):
-        gen = CDAPSHiDeFHierarchyGenerator()
+        converter = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        gen = CDAPSHiDeFHierarchyGenerator(hcxconverter=converter)
         cluster_node_map = {}
         max_node, cur_node = gen.update_cluster_node_map(cluster_node_map,
                                                          'Cluster-0-0', 4)
@@ -79,7 +83,8 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
         self.assertEqual({'Cluster-0-0': 5}, cluster_node_map)
 
     def test_update_persistence_map(self):
-        gen = CDAPSHiDeFHierarchyGenerator()
+        converter = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        gen = CDAPSHiDeFHierarchyGenerator(hcxconverter=converter)
         persistence_map = {}
         gen.update_persistence_map(persistence_map, 1, 'val')
         self.assertEqual({1: 'val'}, persistence_map)
@@ -100,7 +105,8 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
                         os.path.join(temp_dir, 'hidef_output.pruned.edges'))
             data = ''
             out_stream = StringIO(data)
-            gen = CDAPSHiDeFHierarchyGenerator()
+            converter = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+            gen = CDAPSHiDeFHierarchyGenerator(hcxconverter=converter)
             self.assertIsNone(gen.convert_hidef_output_to_cdaps(out_stream,
                                                                 temp_dir))
 
@@ -148,9 +154,11 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
             mockprov.register_dataset = MagicMock()
             mockprov.register_dataset.side_effect = ['XXX', 'YYY']
             mockprov.get_default_date_format_str = MagicMock(return_value='%Y-%m-%d')
+            converter = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
             gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov,
                                                author='author',
-                                               version='version')
+                                               version='version',
+                                               hcxconverter=converter)
             (largest_net_path, largest_network, net_paths) = gen._create_edgelist_files_for_networks(cx_networks)
             self.assertEqual(two_edge_net_file + '.cx', largest_net_path)
             self.assertEqual('two', largest_network.get_name())
@@ -207,7 +215,8 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
             mockprov.register_dataset = MagicMock()
             mockprov.register_dataset.side_effect = ['X', 'Y', 'Z']
             mockprov.get_default_date_format_str = MagicMock(return_value='%Y-%m-%d')
-            gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov)
+            converter = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+            gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov, hcxconverter=converter)
             gen._register_hidef_output_files(temp_dir)
             self.assertEqual(['X', 'Y', 'Z'], gen.get_generated_dataset_ids())
 
@@ -256,9 +265,11 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
             mockprov = MagicMock()
             mockprov.register_dataset = MagicMock(return_val='xxx')
             mockprov.get_default_date_format_str = MagicMock(return_value='%Y-%m-%d')
+            #converter = HCXFromCDAPSCXHierarchy(ndexserver=None, ndexuser='user', ndexpassword='password')
             gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov,
                                                author='author',
-                                               version='version')
+                                               version='version',
+                                               hcxconverter='converter')
 
             gen.get_hierarchy(cx_networks)
             self.fail('Expected exception')
