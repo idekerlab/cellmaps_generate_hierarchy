@@ -1,6 +1,7 @@
 
 import logging
 import ndex2
+import os
 
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
 
@@ -21,7 +22,11 @@ class HCXFromCDAPSCXHierarchy(object):
         """
         self._server = ndexserver
         self._user = ndexuser
-        self._password = ndexpassword
+        if os.path.isfile(ndexpassword):
+            with open(ndexpassword, 'r') as file:
+                self._password = file.readline().strip()
+        else:
+            self._password = ndexpassword
         self._ndexclient = None
         self._initialize_ndex_client()
 
