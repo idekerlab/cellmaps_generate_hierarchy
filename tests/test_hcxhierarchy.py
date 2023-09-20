@@ -4,6 +4,7 @@
 """Tests for `HcxHierarchy`."""
 import unittest
 import ndex2
+import os
 
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
 from cellmaps_generate_hierarchy.hcx import HCXFromCDAPSCXHierarchy
@@ -106,3 +107,10 @@ class TestHcxHierarchy(unittest.TestCase):
             self.fail('Expected exception')
         except CellmapsGenerateHierarchyError as he:
             self.assertEqual('interactome name map is None', str(he))
+
+    def test_password_in_file(self):
+        net = self.get_simple_hierarchy()
+        path = os.path.join(os.path.dirname(__file__), 'data', 'test_password')
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver=None, ndexuser='user', ndexpassword=path)
+        self.assertEqual(myobj._password, 'password')
+
