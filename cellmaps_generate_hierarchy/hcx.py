@@ -1,7 +1,8 @@
-
 import logging
 import ndex2
 import os
+import time
+import json
 
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
 
@@ -16,9 +17,20 @@ class HCXFromCDAPSCXHierarchy(object):
 
     def __init__(self, ndexserver=None,
                  ndexuser=None,
-                 ndexpassword=None):
+                 ndexpassword=None,
+                 visibility=None):
         """
         Constructor
+
+        :param ndexserver:
+        :type ndexserver: str
+        :param ndexuser:
+        :type ndexuser: str
+        :param ndexpassword:
+        :type ndexpassword: str
+        :param visibility: If set to ``public``, ``PUBLIC`` or ``True`` sets hierarchy and interactome to
+                           publicly visibility on NDEx, otherwise they are left as private
+        :type visibility: str or bool
         """
         self._server = ndexserver
         self._user = ndexuser
@@ -27,20 +39,58 @@ class HCXFromCDAPSCXHierarchy(object):
                 self._password = file.readline().strip()
         else:
             self._password = ndexpassword
+        self._visibility = None
+        if visibility is not None:
+            if isinstance(visibility, bool):
+                if visibility is True:
+                    self._visibility = 'PUBLIC'
+            elif isinstance(visibility, str):
+                if visibility.lower() == 'public':
+                    self._visibility = 'PUBLIC'
         self._ndexclient = None
         self._initialize_ndex_client()
+
+    def _set_ndex_client(self, client):
+        """
+        Sets alternate NDEx client
+        """
+        self._ndexclient = client
 
     def _initialize_ndex_client(self):
         """
         Creates NDEx client
         :return:
         """
+        logger.debug('Connecting to NDEx server: ' + str(self._server) +
+                     ' with user: ' + str(self._user))
         self._ndexclient = ndex2.client.Ndex2(host=self._server,
                                               username=self._user,
                                               password=self._password,
                                               skip_version_check=True)
 
-    def _save_network(self, network, visibility=None):
+    def _wait_for_network_summary_completion(self, ndexuuid, timeout=1800,
+                                             timeout_sleep=10):
+        """
+        :param uuid: uuid of the network to pull summary for
+        :type uuid: str
+        """
+        start_time = time.time()
+
+        while True:
+            elapsed_time = time.time() - start_time
+            if elapsed_time > timeout:
+                raise CellmapsGenerateHierarchyError("Waiting for network summary exceeded " +
+                                                     str(timeout) + ' seconds')
+            logger.debug('Checking status of ' + str(ndexuuid) + 'network on NDEx')
+            summary = self._ndexclient.get_network_summary(ndexuuid)
+            if "errorMessage" in summary:
+                raise CellmapsGenerateHierarchyError(f"Error in network summary: {summary['errorMessage']}")
+            elif "completed" in summary and summary["completed"] is True:
+                break
+
+            time.sleep(timeout_sleep)
+
+    def _save_network(self, network):
         """
 
         :param network: Network to save
@@ -50,11 +100,18 @@ class HCXFromCDAPSCXHierarchy(object):
         :return: NDEX UUID of network
         :rtype: str
         """
+        logger.debug('Saving network named: ' + str(network.get_name()) +
+                     ' to NDEx with visibility set to: ' + str(self._visibility))
+        # TODO: catch exceptions from client and raise as CellmapsGenerateHierarchyError
         res = self._ndexclient.save_new_network(network.to_cx(),
-                                                visibility=visibility)
-        if isinstance(res, str):
-            return res[res.rfind('/') + 1:]
-        raise CellmapsGenerateHierarchyError('Expected a str, but got this: ' + str(res))
+                                                visibility=self._visibility)
+        if not isinstance(res, str):
+            raise CellmapsGenerateHierarchyError('Expected a str, but got this: ' + str(res))
+
+        ndexuuid = res[res.rfind('/') + 1:]
+        logger.debug('Checking status of network on NDEx: ' + str(ndexuuid))
+        self._wait_for_network_summary_completion(ndexuuid)
+        return ndexuuid
 
     def _get_root_nodes(self, hierarchy):
         """
@@ -165,7 +222,7 @@ class HCXFromCDAPSCXHierarchy(object):
                                          overwrite=True)
 
     def _generate_url(self, uuid):
-        return "https://idekerlab.ndexbio.org/cytoscape/network/" + str(uuid)
+        return 'https://' + self._server + '/cytoscape/network/' + str(uuid)
 
     def get_converted_hierarchy(self, hierarchy=None, parent_network=None):
         """
@@ -225,4 +282,10 @@ class HCXFromCDAPSCXHierarchy(object):
         interactome_url = self._generate_url(interactome_id)
         hierarchy_url = self._generate_url(hierarchy_id)
 
-        return hierarchy_id, interactome_id, hierarchy_url, interactome_url
+        client_resp = self._ndexclient.get_network_as_cx2_stream(hierarchy_id)
+        hierarchy_hcx = json.loads(client_resp.content)
+
+        client_resp = self._ndexclient.get_network_as_cx2_stream(interactome_id)
+        parent_network_cx2 = json.loads(client_resp.content)
+
+        return hierarchy_hcx, parent_network_cx2, hierarchy_url, interactome_url

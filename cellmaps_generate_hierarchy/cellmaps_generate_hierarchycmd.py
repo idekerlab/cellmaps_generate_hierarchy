@@ -76,6 +76,9 @@ def _parse_arguments(desc, args):
     parser.add_argument('--ndexpassword',
                         help='NDEx password. This can be the password, '
                              'a file containing the password')
+    parser.add_argument('--visibility', action='store_true',
+                        help='If set, makes Hierarchy and interactome network loaded onto '
+                             'NDEx publicly visible')
     parser.add_argument('--logconf', default=None,
                         help='Path to python logging configuration file in '
                              'this format: https://docs.python.org/3/library/'
@@ -113,14 +116,14 @@ def main(args):
     Takes a list of coembedding file {coembedding_file} files from {coembedding_dirs} directories (corresponding to multiple folds of the same data) that
     is in TSV format and generates several interaction networks that are fed via -g flag
     to HiDeF to create a hierarchy.
-    
+
     Format of {coembedding_file} where 1st line is header:
-    
+
     ''\t1\t2\t3\t4\t5...1024
     GENESYMBOL\tEMBEDDING1\tEMBEDDING2...
-    
+
     Example:
-    
+
             1       2       3       4       5
     AAAS    -0.35026753     -0.1307554      -0.046265163    0.3758623       0.22126552
 
@@ -134,7 +137,7 @@ def main(args):
     try:
         logutils.setup_cmd_logging(theargs)
         provenance = ProvenanceUtil()
-        ppigen = CosineSimilarityPPIGenerator(embeddingdirs=theargs.coembedding_dirs, 
+        ppigen = CosineSimilarityPPIGenerator(embeddingdirs=theargs.coembedding_dirs,
                                               cutoffs=theargs.ppi_cutoffs)
 
         refiner = HiDeFHierarchyRefiner(ci_thre=theargs.containment_threshold,
@@ -145,7 +148,8 @@ def main(args):
 
         converter = HCXFromCDAPSCXHierarchy(ndexserver=theargs.ndexserver,
                                             ndexuser=theargs.ndexuser,
-                                            ndexpassword=theargs.ndexpassword)
+                                            ndexpassword=theargs.ndexpassword,
+                                            visibility=theargs.visibility)
 
         hiergen = CDAPSHiDeFHierarchyGenerator(author='cellmaps_generate_hierarchy',
                                                refiner=refiner,

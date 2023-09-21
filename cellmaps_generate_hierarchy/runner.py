@@ -4,6 +4,7 @@ import os
 import logging
 import time
 import json
+import warnings
 from datetime import date
 from tqdm import tqdm
 from cellmaps_utils import constants
@@ -250,12 +251,13 @@ class CellmapsGenerateHierarchy(object):
     def _write_hierarchy_network(self, hierarchy=None):
         """
 
-        :param network:
+        :param hierarchy:
+        :type hierarchy: list
         :return:
         """
         logger.debug('Writing hierarchy')
-        suffix = '.hcx' # todo put this into cellmaps_utils.constants
-        hierarchy_out_file = self.get_hierarchy_dest_file(hierarchy) + suffix
+        suffix = '.hcx'  # todo put this into cellmaps_utils.constants
+        hierarchy_out_file = self.get_hierarchy_dest_file() + suffix
         with open(hierarchy_out_file, 'w') as f:
             json.dump(hierarchy, f)
 
@@ -297,27 +299,27 @@ class CellmapsGenerateHierarchy(object):
         :return:
         """
         logger.debug('Writing hierarchy parent')
-        suffix = '.hcx'  # todo put this into cellmaps_utils.constants
-        parent_out_file = self.get_hierarchy_parent_dest_file(parent) + suffix
+        suffix = '.cx2'  # todo put this into cellmaps_utils.constants
+        parent_out_file = self.get_hierarchy_parent_network_dest_file() + suffix
         with open(parent_out_file, 'w') as f:
             json.dump(parent, f)
-            description = self._description
-            description += ' Hierarchy parent network file'
-            keywords = self._keywords
-            keywords.extend(['file', 'parent', 'interactome', 'ppi', 'network', 'CX2'])
+        description = self._description
+        description += ' Hierarchy parent network file'
+        keywords = self._keywords
+        keywords.extend(['file', 'parent', 'interactome', 'ppi', 'network', 'CX2'])
 
-            data_dict = {'name': 'Hierarchy parent network',
-                         'description': description,
-                         'keywords': keywords,
-                         'data-format': 'CX2',
-                         'author': cellmaps_generate_hierarchy.__name__,
-                         'version': cellmaps_generate_hierarchy.__version__,
-                         'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
-            if parenturl is not None:
-                data_dict['url'] = parenturl
-            dataset_id = self._provenance_utils.register_dataset(self._outdir,
-                                                                 source_file=parent_out_file,
-                                                                 data_dict=data_dict)
+        data_dict = {'name': 'Hierarchy parent network',
+                     'description': description,
+                     'keywords': keywords,
+                     'data-format': 'CX2',
+                     'author': cellmaps_generate_hierarchy.__name__,
+                     'version': cellmaps_generate_hierarchy.__version__,
+                     'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
+        if parenturl is not None:
+            data_dict['url'] = parenturl
+        dataset_id = self._provenance_utils.register_dataset(self._outdir,
+                                                             source_file=parent_out_file,
+                                                             data_dict=data_dict)
         return dataset_id
 
     def run(self):
@@ -359,23 +361,25 @@ class CellmapsGenerateHierarchy(object):
                                                                                         dest_path=cx_path))
 
             # generate hierarchy and get parent ppi
-            hierarchy, parent_ppi, hierarchyurl,\
-            parenturl = self._hiergen.get_converted_hierarchy(ppi_network_prefix_paths)
+            hierarchy, parent_ppi, hierarchyurl, \
+                parenturl = self._hiergen.get_hierarchy(ppi_network_prefix_paths)
 
-            if self._layoutalgo is not None:
-                logger.debug('Applying layout')
-                self._layoutalgo.add_layout(network=hierarchy)
-            else:
-                logger.debug('No layout algorithm set, skipping')
+            # TODO: Need to support layout with HCX
+            warnings.warn("Layout disabled due to incompatibilities with HCX format")
+            # if self._layoutalgo is not None:
+            #    logger.debug('Applying layout')
+            #    self._layoutalgo.add_layout(network=hierarchy)
+            # else:
+            #    logger.debug('No layout algorithm set, skipping')
 
             # write out hierarchy
-            generated_dataset_ids.append(self._write_hierarchy_network(hierarchy))
+            hierarchy_out_file = self._write_hierarchy_network(hierarchy)
 
             # write out parent network and register with fairscape
             generated_dataset_ids.append(self._write_and_register_hierarchy_parent_network(parent=parent_ppi,
                                                                                            parenturl=parenturl))
 
-            generated_dataset_ids.append(self._register_hierarchy_network(hierarchy,
+            generated_dataset_ids.append(self._register_hierarchy_network(hierarchy_out_file,
                                                                           hierarchyurl=hierarchyurl))
 
             # add datasets created by hiergen object
