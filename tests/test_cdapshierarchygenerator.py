@@ -9,7 +9,7 @@ from datetime import date
 import shutil
 import tempfile
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import patch, MagicMock
 import json
 import ndex2
 from io import StringIO
@@ -265,12 +265,12 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
             mockprov = MagicMock()
             mockprov.register_dataset = MagicMock(return_val='xxx')
             mockprov.get_default_date_format_str = MagicMock(return_value='%Y-%m-%d')
-            #converter = HCXFromCDAPSCXHierarchy(ndexserver=None, ndexuser='user', ndexpassword='password')
+            mockconverter = MagicMock()
+            mockconverter.get_converted_hierarchy(return_value=[None, None, None, None])
             gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov,
-                                               author='author',
-                                               version='version',
-                                               hcxconverter='converter')
-
+                                                   author='author',
+                                                   version='version',
+                                                   hcxconverter=mockconverter)
             gen.get_hierarchy(cx_networks)
             self.fail('Expected exception')
         except CellmapsGenerateHierarchyError as e:
