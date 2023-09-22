@@ -102,9 +102,12 @@ class HCXFromCDAPSCXHierarchy(object):
         """
         logger.debug('Saving network named: ' + str(network.get_name()) +
                      ' to NDEx with visibility set to: ' + str(self._visibility))
-        # TODO: catch exceptions from client and raise as CellmapsGenerateHierarchyError
-        res = self._ndexclient.save_new_network(network.to_cx(),
-                                                visibility=self._visibility)
+        try:
+            res = self._ndexclient.save_new_network(network.to_cx(),
+                                                    visibility=self._visibility)
+        except Exception as e:
+            raise CellmapsGenerateHierarchyError('An error occurred while saving the network to NDEx: ' + str(e))
+
         if not isinstance(res, str):
             raise CellmapsGenerateHierarchyError('Expected a str, but got this: ' + str(res))
 
