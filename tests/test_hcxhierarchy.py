@@ -3,6 +3,7 @@
 
 """Tests for `HcxHierarchy`."""
 import unittest
+from unittest.mock import patch, MagicMock
 import ndex2
 import os
 
@@ -37,7 +38,6 @@ class TestHcxHierarchy(unittest.TestCase):
         return net
 
     def test_get_root_nodes(self):
-
         net = self.get_simple_hierarchy()
         myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
         self.assertEqual({0}, myobj._get_root_nodes(net))
@@ -89,7 +89,7 @@ class TestHcxHierarchy(unittest.TestCase):
         name_map = {'A': 100, 'B': 200}
         net.set_node_attribute(0, 'CD_MemberList', values='A B C')
 
-        myobj = HCXFromCDAPSCXHierarchy(ndexserver=None, ndexuser='user', ndexpassword='password')
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
         myobj._add_members_node_attribute(net, interactome_name_map=name_map)
 
         mem_list = net.get_node_attribute(0, 'HCX::members')['v']
@@ -101,7 +101,7 @@ class TestHcxHierarchy(unittest.TestCase):
 
     def test_add_members_node_attribute_map_is_none(self):
         net = self.get_simple_hierarchy()
-        myobj = HCXFromCDAPSCXHierarchy(ndexserver=None, ndexuser='user', ndexpassword='password')
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
         try:
             myobj._add_members_node_attribute(net, interactome_name_map=None)
             self.fail('Expected exception')
@@ -109,8 +109,87 @@ class TestHcxHierarchy(unittest.TestCase):
             self.assertEqual('interactome name map is None', str(he))
 
     def test_password_in_file(self):
-        net = self.get_simple_hierarchy()
         path = os.path.join(os.path.dirname(__file__), 'data', 'test_password')
-        myobj = HCXFromCDAPSCXHierarchy(ndexserver=None, ndexuser='user', ndexpassword=path)
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword=path)
         self.assertEqual(myobj._password, 'password')
+
+    def test_visibility(self):
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password', visibility=True)
+        self.assertEqual(myobj._visibility, 'PUBLIC')
+
+    def test_wait_for_network_summary_completion(self):
+        mock_ndex_client = MagicMock()
+        mock_ndex_client.get_network_summary.return_value = {"completed": True}
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        myobj._set_ndex_client(mock_ndex_client)
+        myobj._wait_for_network_summary_completion("dummy_uuid")
+        mock_ndex_client.get_network_summary.assert_called_with("dummy_uuid")
+
+    def test_wait_for_network_summary_completion_timeout_exceeded(self):
+        mock_ndex_client = MagicMock()
+        mock_ndex_client.get_network_summary.return_value = {"completed": False}
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        myobj._set_ndex_client(mock_ndex_client)
+
+        try:
+            myobj._wait_for_network_summary_completion("dummy_uuid", timeout=1, timeout_sleep=0.5)
+            self.fail('Expected exception')
+        except CellmapsGenerateHierarchyError as he:
+            self.assertTrue("Waiting for network summary exceeded" in str(he))
+
+    def test_wait_for_network_summary_completion_error_message_in_summary(self):
+        mock_ndex_client = MagicMock()
+        mock_ndex_client.get_network_summary.return_value = {"errorMessage": "Some error"}
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        myobj._set_ndex_client(mock_ndex_client)
+
+        try:
+            myobj._wait_for_network_summary_completion("dummy_uuid")
+            self.fail('Expected exception')
+        except CellmapsGenerateHierarchyError as he:
+            self.assertTrue("Error in network summary" in str(he))
+
+    def test_save_network(self):
+        net = self.get_simple_hierarchy()
+        mock_ndex_client = MagicMock()
+        mock_ndex_client.save_new_network = MagicMock(return_value='uuid12345')
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        myobj._set_ndex_client(mock_ndex_client)
+
+        with patch.object(myobj, "_wait_for_network_summary_completion"):
+            result = myobj._save_network(net)
+            self.assertEqual(result, "uuid12345")
+
+    def test_save_network_uuid_is_none(self):
+        net = self.get_simple_hierarchy()
+        mock_ndex_client = MagicMock()
+        mock_ndex_client.save_new_network = MagicMock(return_value=None)
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        myobj._set_ndex_client(mock_ndex_client)
+
+        with patch.object(myobj, "_wait_for_network_summary_completion"):
+            try:
+                result = myobj._save_network(net)
+            except CellmapsGenerateHierarchyError as he:
+                self.assertTrue('Expected a str, but got this: ' in str(he))
+
+    def test_save_network_ndexclient_exception(self):
+        net = self.get_simple_hierarchy()
+        mock_ndex_client = MagicMock()
+        mock_ndex_client.save_new_network.side_effect = Exception('NDEx throws exception')
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        myobj._set_ndex_client(mock_ndex_client)
+
+        with patch.object(myobj, "_wait_for_network_summary_completion"):
+            try:
+                result = myobj._save_network(net)
+            except CellmapsGenerateHierarchyError as he:
+                self.assertTrue('An error occurred while saving the network to NDEx: ' in str(he))
+
+
+
+
+
+
+
 
