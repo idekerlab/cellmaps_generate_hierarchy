@@ -9,8 +9,11 @@ Cell Maps Generate Hierarchy
 .. image:: https://img.shields.io/travis/idekerlab/cellmaps_generate_hierarchy.svg
         :target: https://travis-ci.com/idekerlab/cellmaps_generate_hierarchy
 
-Generates hierarchy from `Cell Maps Coembedding <https://cellmaps-coembedding.readthedocs.io/>`__ using `HiDeF <https://github.com/fanzheng10/HiDeF/>`__
+The Cell Maps Generate Hierarchy Tool generates hierarchy from `Cell Maps Coembedding <https://cellmaps-coembedding.readthedocs.io/>`__ using `HiDeF <https://github.com/fanzheng10/HiDeF/>`__.
+It accepts one or more coembedding directories corresponding to multiple folds of the same data.
 
+The tool creates an output directory where results are stored and registered within `Research Object Crates (RO-Crate) <https://www.researchobject.org/ro-crate>`__ using
+the `FAIRSCAPE-cli <https://pypi.org/project/fairscape-cli>`__.
 
 * Free software: MIT license
 
@@ -21,6 +24,7 @@ Generates hierarchy from `Cell Maps Coembedding <https://cellmaps-coembedding.re
 
    installation
    usage
+   outputs
    modules
    developer
    authors
