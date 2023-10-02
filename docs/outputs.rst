@@ -9,52 +9,52 @@ CX2 Interactome and Hierarchy Outputs
 -------------------------------------
 These files represent the interactome and hierarchy in cx2 format:
 
-- **hierarchy.hcx**:
+- ``hierarchy.hcx``:
     The main output file containing the generated hierarchy in CX2 (HCX) format.
 
-- **hierarchy_parent.cx2**:
+- ``hierarchy_parent.cx2``:
     The parent or primary network used as a reference for generating the hierarchy in CX2 format.
 
 Interaction Network Outputs
 ---------------------------
 These files represent protein-protein interaction networks at different cutoff thresholds:
 
-- **ppi_cutoff_*.cx**:
+- ``ppi_cutoff_*.cx``:
     Protein-Protein Interaction networks in CX format.
 
-- **ppi_cutoff_*.id.edgelist.tsv**:
+- ``ppi_cutoff_*.id.edgelist.tsv``:
     Edgelist representation of the Protein-Protein Interaction networks.
 
 Other Outputs
 -------------
-- **cdaps.json**:
+- ``cdaps.json``:
     A JSON file containing information about the CDAPS analysis. It contains the community detection results and node attributes as CX2.
     More information about the community detection format v2: https://github.com/cytoscape/communitydetection-rest-server/wiki/COMMUNITYDETECTRESULTV2-format
 
-- **hidef_output.edges**:
+- ``hidef_output.edges``:
     Contains the edges or interactions in the HiDeF generated hierarchy.
 
-- **hidef_output.nodes**:
+- ``hidef_output.nodes``:
     Contains the nodes or entities in the HiDeF generated hierarchy.
 
-- **hidef_output.pruned.edges**:
+- ``hidef_output.pruned.edges``:
     Contains pruned edges after certain filtering processes on the original hierarchy.
 
-- **hidef_output.pruned.nodes**:
+- ``hidef_output.pruned.nodes``:
     Contains pruned nodes after certain filtering processes on the original hierarchy.
 
-- **hidef_output.weaver**:
+- ``hidef_output.weaver``:
     Information related to the weaving process used in generating the hierarchy.
 
 Logs and Metadata
 -----------------
-- **error.log**:
+- ``error.log``:
     Contains error messages and exceptions that might have occurred during execution.
 
-- **output.log**:
+- ``output.log``:
     Provides detailed logs about the steps performed and their outcomes.
 
-- **ro-crate-metadata.json**:
+- ``ro-crate-metadata.json``:
     Metadata in RO-Crate format, a community effort to establish a lightweight approach to packaging research data with their metadata.
 
     It contains general information about the data i.a. ID, Type, Name, Description, contextual definitions,
