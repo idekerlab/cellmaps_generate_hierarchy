@@ -5,6 +5,7 @@ import time
 import json
 
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
+import cellmaps_generate_hierarchy
 
 logger = logging.getLogger(__name__)
 
@@ -263,6 +264,9 @@ class HCXFromCDAPSCXHierarchy(object):
         :rtype: tuple
         """
         # save interactome to NDEx
+        path_to_style_network = os.path.join(os.path.dirname(cellmaps_generate_hierarchy.__file__), 'interactome_style.cx')
+        style_network = ndex2.create_nice_cx_from_file(path_to_style_network)
+        parent_network.apply_style_from_network(style_network)
         interactome_id = self._save_network(parent_network)
 
         # annotate hierarchy
