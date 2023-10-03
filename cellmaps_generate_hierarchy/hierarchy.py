@@ -466,6 +466,22 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
             keyword_subset = prov_utils.get_keywords()[:6]
         network.set_name(prov_utils.get_name() + ' - ' + ' '.join(keyword_subset) + ' hierarchy')
 
+    def _annotate_hierarchy_nodes(self, network):
+        """
+        Annotates each node in the hierarchy with its community name and a label flag.
+
+        :param network: The hierarchy containing nodes to be annotated.
+        :type network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        """
+        for node_id, node_obj in network.get_nodes():
+            name = node_obj['n']
+            network.set_node_attribute(node_id, 'CD_CommunityName',
+                                       values=name, type='string',
+                                       overwrite=True)
+            network.set_node_attribute(node_id, 'CD_Labeled',
+                                       values='true', type='boolean',
+                                       overwrite=True)
+
     def get_hierarchy(self, networks):
         """
         Runs HiDeF to generate hierarchy and registers resulting output
@@ -542,6 +558,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
             cd = cdapsutil.CommunityDetection(runner=cdapsutil.ExternalResultsRunner())
             hier = cd.run_community_detection(largest_net, algorithm=cdaps_out_file)
             self._annotate_hierarchy(network=hier, path=largest_net_path)
+            self._annotate_hierarchy_nodes(network=hier)
 
             return self._hcxconverter.get_converted_hierarchy(hierarchy=hier,
                                                               parent_network=largest_net)
