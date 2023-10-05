@@ -29,6 +29,7 @@ class CellmapsGenerateHierarchy(object):
                  organization_name=None,
                  project_name=None,
                  layoutalgo=None,
+                 skip_logging=False,
                  provenance_utils=ProvenanceUtil(),
                  input_data_dict=None):
         """
@@ -43,6 +44,8 @@ class CellmapsGenerateHierarchy(object):
         :param name:
         :param organization_name:
         :param project_name:
+        :param skip_logging: If ``True`` skip logging
+        :type skip_logging: bool
         :param provenance_utils:
         """
         logger.debug('In constructor')
@@ -58,6 +61,10 @@ class CellmapsGenerateHierarchy(object):
         self._organization_name = organization_name
         self._keywords = None
         self._description = None
+        if skip_logging is None:
+            self._skip_logging = False
+        else:
+            self._skip_logging = skip_logging
         self._input_data_dict = input_data_dict
         self._provenance_utils = provenance_utils
         self._layoutalgo = layoutalgo
@@ -282,13 +289,13 @@ class CellmapsGenerateHierarchy(object):
                 raise CellmapsGenerateHierarchyError(self._outdir + ' already exists')
             if not os.path.isdir(self._outdir):
                 os.makedirs(self._outdir, mode=0o755)
-
-            logutils.setup_filelogger(outdir=self._outdir,
-                                      handlerprefix='cellmaps_image_embedding')
-            logutils.write_task_start_json(outdir=self._outdir,
-                                           start_time=self._start_time,
-                                           data={'commandlineargs': self._input_data_dict},
-                                           version=cellmaps_generate_hierarchy.__version__)
+            if self._skip_logging is False:
+                logutils.setup_filelogger(outdir=self._outdir,
+                                          handlerprefix='cellmaps_image_embedding')
+                logutils.write_task_start_json(outdir=self._outdir,
+                                               start_time=self._start_time,
+                                               data={'commandlineargs': self._input_data_dict},
+                                               version=cellmaps_generate_hierarchy.__version__)
             self._update_provenance_fields()
 
             self._create_rocrate()
@@ -325,8 +332,9 @@ class CellmapsGenerateHierarchy(object):
             self._register_computation(generated_dataset_ids=generated_dataset_ids)
             exitcode = 0
         finally:
-            logutils.write_task_finish_json(outdir=self._outdir,
-                                            start_time=self._start_time,
-                                            status=exitcode)
+            if self._skip_logging is False:
+                logutils.write_task_finish_json(outdir=self._outdir,
+                                                start_time=self._start_time,
+                                                status=exitcode)
 
         return exitcode
