@@ -68,6 +68,10 @@ def _parse_arguments(desc, args):
                              'another PPI network')
     parser.add_argument('--skip_layout', action='store_true',
                         help='If set, skips layout of hierarchy step')
+    parser.add_argument('--skip_logging', action='store_true',
+                        help='If set, output.log, error.log and '
+                             'task_#_start/finish.json '
+                             'files will not be created')
     parser.add_argument('--logconf', default=None,
                         help='Path to python logging configuration file in '
                              'this format: https://docs.python.org/3/library/'
@@ -149,6 +153,7 @@ def main(args):
                                          ppigen=ppigen,
                                          hiergen=hiergen,
                                          layoutalgo=layoutalgo,
+                                         skip_logging=theargs.skip_logging,
                                          input_data_dict=theargs.__dict__,
                                          provenance_utils=provenance).run()
     except Exception as e:
