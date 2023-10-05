@@ -69,6 +69,8 @@ def _parse_arguments(desc, args):
                              'another PPI network')
     parser.add_argument('--skip_layout', action='store_true',
                         help='If set, skips layout of hierarchy step')
+    parser.add_argument('--keep', action='store_true',
+                        help='If set, keeps interactome and hierarchy on specified NDEx account')
     parser.add_argument('--ndexserver', default='idekerlab.ndexbio.org',
                         help='Server where hierarchy can be converted to HCX and saved')
     parser.add_argument('--ndexuser', required=True,
@@ -149,6 +151,7 @@ def main(args):
         converter = HCXFromCDAPSCXHierarchy(ndexserver=theargs.ndexserver,
                                             ndexuser=theargs.ndexuser,
                                             ndexpassword=theargs.ndexpassword,
+                                            keep=theargs.keep,
                                             visibility=theargs.visibility)
 
         hiergen = CDAPSHiDeFHierarchyGenerator(author='cellmaps_generate_hierarchy',

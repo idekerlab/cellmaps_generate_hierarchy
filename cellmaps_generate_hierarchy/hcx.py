@@ -19,6 +19,7 @@ class HCXFromCDAPSCXHierarchy(object):
     def __init__(self, ndexserver=None,
                  ndexuser=None,
                  ndexpassword=None,
+                 keep=False,
                  visibility=None):
         """
         Constructor
@@ -40,6 +41,7 @@ class HCXFromCDAPSCXHierarchy(object):
                 self._password = file.readline().strip()
         else:
             self._password = ndexpassword
+        self._keep = keep
         self._visibility = None
         if visibility is not None:
             if isinstance(visibility, bool):
@@ -117,6 +119,8 @@ class HCXFromCDAPSCXHierarchy(object):
         self._wait_for_network_summary_completion(ndexuuid)
         return ndexuuid
 
+    def _delete_network(self, network_id):
+        self._ndexclient.delete_network(network_id)
     def _get_root_nodes(self, hierarchy):
         """
         In CDAPS the root node has only source edges to children
@@ -286,13 +290,18 @@ class HCXFromCDAPSCXHierarchy(object):
         # save hierarchy to NDEx
         hierarchy_id = self._save_network(hierarchy)
 
-        interactome_url = self._generate_url(interactome_id)
-        hierarchy_url = self._generate_url(hierarchy_id)
-
         client_resp = self._ndexclient.get_network_as_cx2_stream(hierarchy_id)
         hierarchy_hcx = json.loads(client_resp.content)
 
         client_resp = self._ndexclient.get_network_as_cx2_stream(interactome_id)
         parent_network_cx2 = json.loads(client_resp.content)
+
+        interactome_url = self._generate_url(interactome_id)
+        hierarchy_url = self._generate_url(hierarchy_id)
+        if not self._keep:
+            self._delete_network(interactome_id)
+            self._delete_network(hierarchy_id)
+            interactome_url = None
+            hierarchy_url = None
 
         return hierarchy_hcx, parent_network_cx2, hierarchy_url, interactome_url
