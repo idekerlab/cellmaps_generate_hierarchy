@@ -34,7 +34,7 @@ requirements = ['cellmaps_utils',
                 'numpy',
                 'ndex2>=3.5.1',
                 'cdapsutil',
-                'leidenalg<=0.9.1',
+                'leidenalg==0.9.1',
                 'hidef']
 
 setup_requirements = []
