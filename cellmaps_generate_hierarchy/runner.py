@@ -29,7 +29,7 @@ class CellmapsGenerateHierarchy(object):
                  organization_name=None,
                  project_name=None,
                  layoutalgo=None,
-                 skip_logging=False,
+                 skip_logging=True,
                  provenance_utils=ProvenanceUtil(),
                  input_data_dict=None):
         """
@@ -44,7 +44,7 @@ class CellmapsGenerateHierarchy(object):
         :param name:
         :param organization_name:
         :param project_name:
-        :param skip_logging: If ``True`` skip logging
+        :param skip_logging: If ``True`` skip logging, if ``None`` or ``False`` do NOT skip logging
         :type skip_logging: bool
         :param provenance_utils:
         """
@@ -292,10 +292,10 @@ class CellmapsGenerateHierarchy(object):
             if self._skip_logging is False:
                 logutils.setup_filelogger(outdir=self._outdir,
                                           handlerprefix='cellmaps_image_embedding')
-                logutils.write_task_start_json(outdir=self._outdir,
-                                               start_time=self._start_time,
-                                               data={'commandlineargs': self._input_data_dict},
-                                               version=cellmaps_generate_hierarchy.__version__)
+            logutils.write_task_start_json(outdir=self._outdir,
+                                           start_time=self._start_time,
+                                           data={'commandlineargs': self._input_data_dict},
+                                           version=cellmaps_generate_hierarchy.__version__)
             self._update_provenance_fields()
 
             self._create_rocrate()
@@ -332,9 +332,8 @@ class CellmapsGenerateHierarchy(object):
             self._register_computation(generated_dataset_ids=generated_dataset_ids)
             exitcode = 0
         finally:
-            if self._skip_logging is False:
-                logutils.write_task_finish_json(outdir=self._outdir,
-                                                start_time=self._start_time,
-                                                status=exitcode)
+            logutils.write_task_finish_json(outdir=self._outdir,
+                                            start_time=self._start_time,
+                                            status=exitcode)
 
         return exitcode
