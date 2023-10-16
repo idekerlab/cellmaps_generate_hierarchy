@@ -7,7 +7,7 @@ Cell Maps Generate Hierarchy
         :target: https://pypi.python.org/pypi/cellmaps_generate_hierarchy
 
 .. image:: https://app.travis-ci.com/idekerlab/cellmaps_generate_hierarchy.svg?branch=main
-        :target: https://app.travis-ci.com/github/idekerlab/cellmaps_coembedding
+        :target: https://app.travis-ci.com/github/idekerlab/cellmaps_generate_hierarchy
 
 .. image:: https://readthedocs.org/projects/cellmaps-generate-hierarchy/badge/?version=latest
         :target: https://cellmaps-generate-hierarchy.readthedocs.io/en/latest/?badge=latest
