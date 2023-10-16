@@ -81,9 +81,8 @@ def _parse_arguments(desc, args):
     parser.add_argument('--visibility', action='store_true',
                         help='If set, makes Hierarchy and interactome network loaded onto '
                              'NDEx publicly visible')
-    parser.add_argument('--skip_logging', action='store_true',
-                        help='If set, output.log, error.log and '
-                             'task_#_start/finish.json '
+    parser.add_argument('--skip_logging', type=_str2bool, default=True,
+                        help='If set, output.log, error.log'
                              'files will not be created')
     parser.add_argument('--logconf', default=None,
                         help='Path to python logging configuration file in '
@@ -104,6 +103,14 @@ def _parse_arguments(desc, args):
 
     return parser.parse_args(args)
 
+
+def _str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def main(args):
     """
