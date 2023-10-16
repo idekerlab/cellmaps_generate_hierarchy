@@ -6,7 +6,7 @@ Cell Maps Generate Hierarchy
 .. image:: https://img.shields.io/pypi/v/cellmaps_generate_hierarchy.svg
         :target: https://pypi.python.org/pypi/cellmaps_generate_hierarchy
 
-.. image:: https://img.shields.io/travis/idekerlab/cellmaps_generate_hierarchy.svg
+.. image:: https://app.travis-ci.com/idekerlab/cellmaps_generate_hierarchy.svg?branch=main
         :target: https://travis-ci.com/idekerlab/cellmaps_generate_hierarchy
 
 .. image:: https://readthedocs.org/projects/cellmaps-generate-hierarchy/badge/?version=latest
