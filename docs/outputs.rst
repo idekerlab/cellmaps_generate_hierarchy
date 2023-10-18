@@ -77,7 +77,6 @@ Logs and Metadata
           "keywords": [
             "CM4AI",
             "Example",
-            (...),
             "interactome",
             "ppi",
             "network",
