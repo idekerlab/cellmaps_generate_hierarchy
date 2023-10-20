@@ -5,22 +5,22 @@ Outputs
 The `cellmaps_generate_hierarchycmd.py` script produces a collection of output files in the specified output directory.
 Each of these files serves a specific purpose in the hierarchy generation and interaction mapping processes.
 
-CX2 Interactome and Hierarchy Outputs
--------------------------------------
-These files represent the interactome and hierarchy in cx2 format:
+CX2_ Interactome and Hierarchy Outputs
+----------------------------------------
+These files represent the final interactome and hierarchy in CX2_ format:
 
-- ``hierarchy.hcx``:
-    The main output file containing the generated hierarchy in CX2 (HCX) format.
+- ``hierarchy.cx2``:
+    The main output file containing the generated hierarchy in HCX_ format.
 
 - ``hierarchy_parent.cx2``:
-    The parent or primary network used as a reference for generating the hierarchy in CX2 format.
+    The parent or primary network used as a reference for generating the hierarchy in CX2_ format.
 
 Interaction Network Outputs
 ---------------------------
-These files represent protein-protein interaction networks at different cutoff thresholds:
+Intermediate processing step files that represent protein-protein interaction networks at different cutoff thresholds:
 
 - ``ppi_cutoff_*.cx``:
-    Protein-Protein Interaction networks in CX format.
+    Protein-Protein Interaction networks in CX_ format.
 
 - ``ppi_cutoff_*.id.edgelist.tsv``:
     Edgelist representation of the Protein-Protein Interaction networks.
@@ -28,20 +28,20 @@ These files represent protein-protein interaction networks at different cutoff t
 Other Outputs
 -------------
 - ``cdaps.json``:
-    A JSON file containing information about the CDAPS analysis. It contains the community detection results and node attributes as CX2.
-    More information about the community detection format v2: https://github.com/cytoscape/communitydetection-rest-server/wiki/COMMUNITYDETECTRESULTV2-format
+    A JSON file containing information about the CDAPS_ analysis. It contains the community detection results and node attributes as CX2_.
+    More information about the community detection format v2 can be found `here <https://github.com/cytoscape/communitydetection-rest-server/wiki/COMMUNITYDETECTRESULTV2-format>`__
 
 - ``hidef_output.edges``:
-    Contains the edges or interactions in the HiDeF generated hierarchy.
+    Contains the edges or interactions in the HiDeF_ generated hierarchy.
 
 - ``hidef_output.nodes``:
-    Contains the nodes or entities in the HiDeF generated hierarchy.
+    Contains the nodes or entities in the HiDeF_ generated hierarchy.
 
 - ``hidef_output.pruned.edges``:
-    Contains pruned edges after certain filtering processes on the original hierarchy.
+    Contains pruned edges after certain filtering (maturing) processes on the original hierarchy.
 
 - ``hidef_output.pruned.nodes``:
-    Contains pruned nodes after certain filtering processes on the original hierarchy.
+    Contains pruned nodes after certain filtering (maturing) processes on the original hierarchy.
 
 - ``hidef_output.weaver``:
     Information related to the weaving process used in generating the hierarchy.
@@ -55,13 +55,13 @@ Logs and Metadata
     Provides detailed logs about the steps performed and their outcomes.
 
 - ``ro-crate-metadata.json``:
-    Metadata in RO-Crate format, a community effort to establish a lightweight approach to packaging research data with their metadata.
+    Metadata in RO-Crate_ format, a community effort to establish a lightweight approach to packaging research data with their metadata.
 
     It contains general information about the data i.a. ID, Type, Name, Description, contextual definitions,
     Software detail, as well as datasets details of each individual part of the data.
 
-    For example, the metadata for the content of hierarchy.hcx provides unique id, context, type, url, name, keywords, etc.
-    The url can be used to view the hierarchy in Cytoscape Web.
+    For example, the metadata for the content of hierarchy.cx provides unique id, context, type, url, name, keywords, etc.
+    The url can be used to view the hierarchy in Cytoscape_ Web.
 
     .. code-block:: json
 
@@ -77,7 +77,6 @@ Logs and Metadata
           "keywords": [
             "CM4AI",
             "Example",
-            (...),
             "interactome",
             "ppi",
             "network",
@@ -103,5 +102,10 @@ Logs and Metadata
 
     Additionally, it contains Computation Details, name, description, Run By etc.
 
-
-
+.. _CX: https://cytoscape.org/cx/specification/cytoscape-exchange-format-specification-(version-1)
+.. _CX2: https://cytoscape.org/cx/cx2/specification/cytoscape-exchange-format-specification-(version-2)
+.. _HCX: https://cytoscape.org/cx/cx2/hcx-specification
+.. _CDAPS: https://cdaps.readthedocs.io
+.. _HiDeF: https://hidef.readthedocs.io
+.. _RO-Crate: https://www.researchobject.org/ro-crate
+.. _Cytoscape: https://cytoscape.org/

@@ -82,8 +82,7 @@ def _parse_arguments(desc, args):
                         help='If set, makes Hierarchy and interactome network loaded onto '
                              'NDEx publicly visible')
     parser.add_argument('--skip_logging', action='store_true',
-                        help='If set, output.log, error.log and '
-                             'task_#_start/finish.json '
+                        help='If set, output.log, error.log '
                              'files will not be created')
     parser.add_argument('--logconf', default=None,
                         help='Path to python logging configuration file in '

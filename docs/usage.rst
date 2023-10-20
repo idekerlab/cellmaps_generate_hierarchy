@@ -105,6 +105,5 @@ Via Docker
 
 .. code-block::
 
-   docker run -v `pwd`:`pwd` -w `pwd` idekerlab/cellmaps_generate_hierarchy:0.1.0 cellmaps_generate_hierarchycmd.py ./cellmaps_generate_hierarchy --coembedding_dirs ./cellmaps_coembedding_outdir
-
+   Coming soon...
 
