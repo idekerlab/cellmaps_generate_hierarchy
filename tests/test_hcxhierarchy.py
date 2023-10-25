@@ -5,6 +5,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import ndex2
+from ndex2.cx2 import CX2Network
 import os
 
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
@@ -116,6 +117,22 @@ class TestHcxHierarchy(unittest.TestCase):
     def test_visibility(self):
         myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password', visibility=True)
         self.assertEqual(myobj._visibility, 'PUBLIC')
+
+    def test_get_visual_editor_properties_aspect_from_network(self):
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver='server')
+
+        # try with empty network
+        empty_net = CX2Network()
+        res = myobj._get_visual_editor_properties_aspect_from_network(network=empty_net)
+        self.assertIsNone(res)
+
+        # try with network containing the aspect
+        fake_net = CX2Network()
+        visual_edit_aspect = {HCXFromCDAPSCXHierarchy.VISUAL_EDITOR_PROPERTIES_ASPECT: 1}
+        fake_net.set_opaque_aspects([visual_edit_aspect])
+        res = myobj._get_visual_editor_properties_aspect_from_network(network=fake_net)
+        self.assertEqual(res, visual_edit_aspect)
+
 
 
 
