@@ -17,6 +17,8 @@ class HCXFromCDAPSCXHierarchy(object):
     into HCX hierarchy and CX2 respectively.
     """
 
+    VISUAL_EDITOR_PROPERTIES_ASPECT = 'visualEditorProperties'
+
     def __init__(self, ndexserver=None,
                  ndexuser=None,
                  ndexpassword=None,
@@ -222,7 +224,7 @@ class HCXFromCDAPSCXHierarchy(object):
         :rtype: dict
         """
         for aspect in network.get_opaque_aspects():
-            if 'visualEditorProperties' in aspect:
+            if HCXFromCDAPSCXHierarchy.VISUAL_EDITOR_PROPERTIES_ASPECT in aspect:
                 return aspect
         return None
 
