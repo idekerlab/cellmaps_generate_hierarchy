@@ -767,10 +767,7 @@
                 "properties": {
                     "nodeSizeLocked": true,
                     "arrowColorMatchesEdge": false,
-                    "NETWORK_CENTER_Y_LOCATION": 0.0,
-                    "nodeCustomGraphicsSizeSync": true,
-                    "NETWORK_CENTER_X_LOCATION": 1.5087261,
-                    "NETWORK_SCALE_FACTOR": 3.0259538
+                    "nodeCustomGraphicsSizeSync": true
                 }
             }
         ]
