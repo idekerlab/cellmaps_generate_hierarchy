@@ -213,6 +213,19 @@ class HCXFromCDAPSCXHierarchy(object):
     def _generate_url(self, uuid):
         return 'https://' + self._server + '/cytoscape/network/' + str(uuid)
 
+    def _get_visual_editor_properties_aspect_from_network(self, network=None):
+        """
+        Gets ``visualEditorProperties`` aspect from **network**
+        :param network:
+        :type network: :py:class:`ndex2.cx2.CX2Network`
+        :return: `visualEditorProperties`` aspect or ``None`` if not found
+        :rtype: dict
+        """
+        for aspect in network.get_opaque_aspects():
+            if 'visualEditorProperties' in aspect:
+                return aspect
+        return None
+
     def get_converted_hierarchy(self, hierarchy=None, parent_network=None):
         """
         Converts hierarchy in CX CDAPS format into HCX format and parent network
@@ -260,6 +273,10 @@ class HCXFromCDAPSCXHierarchy(object):
         style_network = rawcx2_factory.get_cx2network(path_to_style_network)
         parent_network_cx2.set_visual_properties(style_network.get_visual_properties())
 
+        visual_editor_props = self._get_visual_editor_properties_aspect_from_network(style_network)
+        if visual_editor_props is not None:
+            parent_network_cx2.add_opaque_aspect(visual_editor_props)
+
         if self._server is not None and self._user is not None and self._password is not None:
             interactome_id = self._save_network(parent_network_cx2)
             interactome_url = self._generate_url(interactome_id)
@@ -284,6 +301,11 @@ class HCXFromCDAPSCXHierarchy(object):
                                              'hierarchy_style.cx2')
         style_network = rawcx2_factory.get_cx2network(path_to_style_network)
         hierarchy_hcx.set_visual_properties(style_network.get_visual_properties())
+
+        visual_editor_props = self._get_visual_editor_properties_aspect_from_network(style_network)
+        if visual_editor_props is not None:
+            hierarchy_hcx.add_opaque_aspect(visual_editor_props)
+
         if self._server is not None and self._user is not None and self._password is not None:
             hierarchy_id = self._save_network(hierarchy_hcx)
             hierarchy_url = self._generate_url(hierarchy_id)
