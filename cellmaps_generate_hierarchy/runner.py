@@ -263,7 +263,7 @@ class CellmapsGenerateHierarchy(object):
         :return:
         """
         logger.debug('Writing hierarchy')
-        suffix = '.hcx'  # todo put this into cellmaps_utils.constants
+        suffix = '.cx2'  # todo put this into cellmaps_utils.constants
         hierarchy_out_file = self.get_hierarchy_dest_file() + suffix
         with open(hierarchy_out_file, 'w') as f:
             json.dump(hierarchy, f)

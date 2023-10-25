@@ -6,6 +6,7 @@ import json
 
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
 import cellmaps_generate_hierarchy
+from ndex2.cx2 import NoStyleCXToCX2NetworkFactory, RawCX2NetworkFactory
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,6 @@ class HCXFromCDAPSCXHierarchy(object):
     def __init__(self, ndexserver=None,
                  ndexuser=None,
                  ndexpassword=None,
-                 keep=False,
                  visibility=None):
         """
         Constructor
@@ -36,12 +36,11 @@ class HCXFromCDAPSCXHierarchy(object):
         """
         self._server = ndexserver
         self._user = ndexuser
-        if os.path.isfile(ndexpassword):
+        if ndexpassword is not None and os.path.isfile(ndexpassword):
             with open(ndexpassword, 'r') as file:
                 self._password = file.readline().strip()
         else:
             self._password = ndexpassword
-        self._keep = keep
         self._visibility = None
         if visibility is not None:
             if isinstance(visibility, bool):
@@ -71,33 +70,11 @@ class HCXFromCDAPSCXHierarchy(object):
                                               password=self._password,
                                               skip_version_check=True)
 
-    def _wait_for_network_summary_completion(self, ndexuuid, timeout=1800,
-                                             timeout_sleep=10):
-        """
-        :param uuid: uuid of the network to pull summary for
-        :type uuid: str
-        """
-        start_time = time.time()
-
-        while True:
-            elapsed_time = time.time() - start_time
-            if elapsed_time > timeout:
-                raise CellmapsGenerateHierarchyError("Waiting for network summary exceeded " +
-                                                     str(timeout) + ' seconds')
-            logger.debug('Checking status of ' + str(ndexuuid) + 'network on NDEx')
-            summary = self._ndexclient.get_network_summary(ndexuuid)
-            if "errorMessage" in summary:
-                raise CellmapsGenerateHierarchyError(f"Error in network summary: {summary['errorMessage']}")
-            elif "completed" in summary and summary["completed"] is True:
-                break
-
-            time.sleep(timeout_sleep)
-
     def _save_network(self, network):
         """
 
         :param network: Network to save
-        :type network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :type network: :py:class:`~ndex2.cx2.CX2Network`
         :param visibility: should be either ``PUBLIC`` or ``PRIVATE``
         :type visibility: str
         :return: NDEX UUID of network
@@ -106,8 +83,8 @@ class HCXFromCDAPSCXHierarchy(object):
         logger.debug('Saving network named: ' + str(network.get_name()) +
                      ' to NDEx with visibility set to: ' + str(self._visibility))
         try:
-            res = self._ndexclient.save_new_network(network.to_cx(),
-                                                    visibility=self._visibility)
+            res = self._ndexclient.save_new_cx2_network(network.to_cx2(),
+                                                        visibility=self._visibility)
         except Exception as e:
             raise CellmapsGenerateHierarchyError('An error occurred while saving the network to NDEx: ' + str(e))
 
@@ -115,12 +92,11 @@ class HCXFromCDAPSCXHierarchy(object):
             raise CellmapsGenerateHierarchyError('Expected a str, but got this: ' + str(res))
 
         ndexuuid = res[res.rfind('/') + 1:]
-        logger.debug('Checking status of network on NDEx: ' + str(ndexuuid))
-        self._wait_for_network_summary_completion(ndexuuid)
         return ndexuuid
 
     def _delete_network(self, network_id):
         self._ndexclient.delete_network(network_id)
+
     def _get_root_nodes(self, hierarchy):
         """
         In CDAPS the root node has only source edges to children
@@ -165,7 +141,7 @@ class HCXFromCDAPSCXHierarchy(object):
                                              type='boolean',
                                              overwrite=True)
 
-    def _add_hierarchy_network_attributes(self, hierarchy, interactome_id=None):
+    def _add_hierarchy_network_attributes(self, hierarchy, interactome_id=None, interactome_name=None):
         """
 
         :param hierarchy:
@@ -177,16 +153,21 @@ class HCXFromCDAPSCXHierarchy(object):
         hierarchy.set_network_attribute('HCX::modelFileCount',
                                         values='2',
                                         type='integer')
-        hierarchy.set_network_attribute('HCX::interactionNetworkUUID',
-                                        values=interactome_id,
-                                        type='string')
-        if self._server is None:
-            server = 'www.ndexbio.org'
-        else:
-            server = self._server
-        hierarchy.set_network_attribute('HCX::interactionNetworkHost',
-                                        values=server,
-                                        type='string')
+        if interactome_name is not None:
+            hierarchy.set_network_attribute('HCX::interactionNetworkName',
+                                            values=interactome_name,
+                                            type='string')
+        elif interactome_id is not None:
+            hierarchy.set_network_attribute('HCX::interactionNetworkUUID',
+                                            values=interactome_id,
+                                            type='string')
+            if self._server is None:
+                server = 'www.ndexbio.org'
+            else:
+                server = self._server
+            hierarchy.set_network_attribute('HCX::interactionNetworkHost',
+                                            values=server,
+                                            type='string')
 
     def _get_mapping_of_node_names_to_ids(self, network):
         """
@@ -267,15 +248,26 @@ class HCXFromCDAPSCXHierarchy(object):
                   parent ppi as :py:class:`list`, hierarchyurl, parenturl)
         :rtype: tuple
         """
-        # save interactome to NDEx
-        path_to_style_network = os.path.join(os.path.dirname(cellmaps_generate_hierarchy.__file__), 'interactome_style.cx')
-        style_network = ndex2.create_nice_cx_from_file(path_to_style_network)
-        parent_network.apply_style_from_network(style_network)
-        interactome_id = self._save_network(parent_network)
+        hierarchy_url = None
+        interactome_url = None
 
-        # annotate hierarchy
-        self._add_hierarchy_network_attributes(hierarchy,
-                                               interactome_id=interactome_id)
+        cx_factory = NoStyleCXToCX2NetworkFactory()
+        parent_network_cx2 = cx_factory.get_cx2network(parent_network)
+
+        rawcx2_factory = RawCX2NetworkFactory()
+        path_to_style_network = os.path.join(os.path.dirname(cellmaps_generate_hierarchy.__file__),
+                                             'interactome_style.cx2')
+        style_network = rawcx2_factory.get_cx2network(path_to_style_network)
+        parent_network_cx2.set_visual_properties(style_network.get_visual_properties())
+
+        if self._server is not None and self._user is not None and self._password is not None:
+            interactome_id = self._save_network(parent_network_cx2)
+            interactome_url = self._generate_url(interactome_id)
+            self._add_hierarchy_network_attributes(hierarchy,
+                                                   interactome_id=interactome_id)
+        else:
+            self._add_hierarchy_network_attributes(hierarchy,
+                                                   interactome_name="hierarchy_parent.cx2")
 
         root_nodes = self._get_root_nodes(hierarchy)
 
@@ -287,21 +279,13 @@ class HCXFromCDAPSCXHierarchy(object):
         self._add_members_node_attribute(hierarchy,
                                          interactome_name_map=interactome_name_map)
 
-        # save hierarchy to NDEx
-        hierarchy_id = self._save_network(hierarchy)
+        hierarchy_hcx = cx_factory.get_cx2network(hierarchy)
+        path_to_style_network = os.path.join(os.path.dirname(cellmaps_generate_hierarchy.__file__),
+                                             'hierarchy_style.cx2')
+        style_network = rawcx2_factory.get_cx2network(path_to_style_network)
+        hierarchy_hcx.set_visual_properties(style_network.get_visual_properties())
+        if self._server is not None and self._user is not None and self._password is not None:
+            hierarchy_id = self._save_network(hierarchy_hcx)
+            hierarchy_url = self._generate_url(hierarchy_id)
 
-        client_resp = self._ndexclient.get_network_as_cx2_stream(hierarchy_id)
-        hierarchy_hcx = json.loads(client_resp.content)
-
-        client_resp = self._ndexclient.get_network_as_cx2_stream(interactome_id)
-        parent_network_cx2 = json.loads(client_resp.content)
-
-        interactome_url = self._generate_url(interactome_id)
-        hierarchy_url = self._generate_url(hierarchy_id)
-        if not self._keep:
-            self._delete_network(interactome_id)
-            self._delete_network(hierarchy_id)
-            interactome_url = None
-            hierarchy_url = None
-
-        return hierarchy_hcx, parent_network_cx2, hierarchy_url, interactome_url
+        return hierarchy_hcx.to_cx2(), parent_network_cx2.to_cx2(), hierarchy_url, interactome_url
