@@ -39,6 +39,21 @@ class TestHcxHierarchy(unittest.TestCase):
                         edge_target=subchild1)
         return net
 
+    @staticmethod
+    def _get_simple_cx2_hierarchy():
+        net = ndex2.cx2.CX2Network()
+        root = net.add_node(1, {'n': 'root'})
+        child1 = net.add_node(2, {'n': 'child1'})
+
+        net.add_edge(source=root, target=child1)
+
+        child2 = net.add_node(3, {'n': 'child2'})
+        net.add_edge(source=root, target=child2)
+
+        subchild1 = net.add_node(4, {'n': 'subchild1'})
+        net.add_edge(source=child1, target=subchild1)
+        return net
+
     def test_get_root_nodes(self):
         net = self._get_simple_nicecx_hierarchy()
         myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
@@ -133,11 +148,35 @@ class TestHcxHierarchy(unittest.TestCase):
         res = myobj._get_visual_editor_properties_aspect_from_network(network=fake_net)
         self.assertEqual(res, visual_edit_aspect)
 
+    def test_save_network(self):
+        net = self._get_simple_cx2_hierarchy()
+        mock_ndex_client = MagicMock()
+        mock_ndex_client.save_new_cx2_network.return_value = 'http://some-url.com/uuid12345'
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        myobj._set_ndex_client(mock_ndex_client)
+        result = myobj._save_network(net)
+        self.assertEqual(result, "uuid12345")
 
+    def test_save_network_uuid_is_none(self):
+        net = self._get_simple_cx2_hierarchy()
+        mock_ndex_client = MagicMock()
+        mock_ndex_client.save_new_cx2_network.return_value = None
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        myobj._set_ndex_client(mock_ndex_client)
 
+        try:
+            result = myobj._save_network(net)
+        except CellmapsGenerateHierarchyError as he:
+            self.assertTrue('Expected a str, but got this: ' in str(he))
 
+    def test_save_network_ndexclient_exception(self):
+        net = self._get_simple_cx2_hierarchy()
+        mock_ndex_client = MagicMock()
+        mock_ndex_client.save_new_cx2_network.side_effect = Exception('NDEx throws exception')
+        myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        myobj._set_ndex_client(mock_ndex_client)
 
-
-
-
-
+        try:
+            result = myobj._save_network(net)
+        except CellmapsGenerateHierarchyError as he:
+            self.assertTrue('An error occurred while saving the network to NDEx: ' in str(he))
