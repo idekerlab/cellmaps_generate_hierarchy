@@ -21,7 +21,8 @@ class TestHcxHierarchy(unittest.TestCase):
     def tearDown(self):
         """Tear down test fixtures, if any."""
 
-    def get_simple_hierarchy(self):
+    @staticmethod
+    def _get_simple_nicecx_hierarchy():
         net = ndex2.nice_cx_network.NiceCXNetwork()
         root = net.create_node('root')
         child1 = net.create_node('child1')
@@ -39,12 +40,12 @@ class TestHcxHierarchy(unittest.TestCase):
         return net
 
     def test_get_root_nodes(self):
-        net = self.get_simple_hierarchy()
+        net = self._get_simple_nicecx_hierarchy()
         myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
         self.assertEqual({0}, myobj._get_root_nodes(net))
 
     def test_add_isroot_node_attribute(self):
-        net = self.get_simple_hierarchy()
+        net = self._get_simple_nicecx_hierarchy()
         myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
         myobj._add_isroot_node_attribute(net, root_nodes={0})
         self.assertEqual('true', net.get_node_attribute(0, 'HCX::isRoot')['v'])
@@ -52,14 +53,14 @@ class TestHcxHierarchy(unittest.TestCase):
             self.assertEqual('false', net.get_node_attribute(x, 'HCX::isRoot')['v'])
 
     def test_get_mapping_of_node_names_to_ids(self):
-        net = self.get_simple_hierarchy()
+        net = self._get_simple_nicecx_hierarchy()
         myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
         res = myobj._get_mapping_of_node_names_to_ids(net)
         self.assertEqual({'child1': 1, 'child2': 2,
                           'root': 0, 'subchild1': 3}, res)
 
     def test_add_hierarchy_network_attributes(self):
-        net = self.get_simple_hierarchy()
+        net = self._get_simple_nicecx_hierarchy()
         myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
         myobj._add_hierarchy_network_attributes(net, interactome_id='12345')
         self.assertEqual('hierarchy_v0.1',
@@ -72,7 +73,7 @@ class TestHcxHierarchy(unittest.TestCase):
                          net.get_network_attribute('HCX::interactionNetworkHost')['v'])
 
     def test_add_hierarchy_network_attributes_server_is_none(self):
-        net = self.get_simple_hierarchy()
+        net = self._get_simple_nicecx_hierarchy()
         myobj = HCXFromCDAPSCXHierarchy(ndexserver=None, ndexuser='user', ndexpassword='password')
         myobj._add_hierarchy_network_attributes(net, interactome_id='12345')
         self.assertEqual('hierarchy_v0.1',
@@ -85,8 +86,7 @@ class TestHcxHierarchy(unittest.TestCase):
                          net.get_network_attribute('HCX::interactionNetworkHost')['v'])
 
     def test_add_members_node_attribute(self):
-        # {'child1': 1, 'child2': 2}
-        net = self.get_simple_hierarchy()
+        net = self._get_simple_nicecx_hierarchy()
         name_map = {'A': 100, 'B': 200}
         net.set_node_attribute(0, 'CD_MemberList', values='A B C')
 
@@ -101,7 +101,7 @@ class TestHcxHierarchy(unittest.TestCase):
         self.assertEqual(None, net.get_node_attribute(1, 'HCX::members'))
 
     def test_add_members_node_attribute_map_is_none(self):
-        net = self.get_simple_hierarchy()
+        net = self._get_simple_nicecx_hierarchy()
         myobj = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
         try:
             myobj._add_members_node_attribute(net, interactome_name_map=None)

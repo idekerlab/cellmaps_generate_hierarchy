@@ -1,8 +1,6 @@
 import logging
 import ndex2
 import os
-import time
-import json
 
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
 import cellmaps_generate_hierarchy
@@ -77,8 +75,6 @@ class HCXFromCDAPSCXHierarchy(object):
 
         :param network: Network to save
         :type network: :py:class:`~ndex2.cx2.CX2Network`
-        :param visibility: should be either ``PUBLIC`` or ``PRIVATE``
-        :type visibility: str
         :return: NDEX UUID of network
         :rtype: str
         """
@@ -285,6 +281,7 @@ class HCXFromCDAPSCXHierarchy(object):
             self._add_hierarchy_network_attributes(hierarchy,
                                                    interactome_id=interactome_id)
         else:
+            # TODO: interactome name should be set earlier and passed to the function (not hardcoded)
             self._add_hierarchy_network_attributes(hierarchy,
                                                    interactome_name="hierarchy_parent.cx2")
 
