@@ -151,11 +151,7 @@ class HCXFromCDAPSCXHierarchy(object):
         hierarchy.set_network_attribute('HCX::modelFileCount',
                                         values='2',
                                         type='integer')
-        if interactome_name is not None:
-            hierarchy.set_network_attribute('HCX::interactionNetworkName',
-                                            values=interactome_name,
-                                            type='string')
-        elif interactome_id is not None:
+        if interactome_id is not None:
             hierarchy.set_network_attribute('HCX::interactionNetworkUUID',
                                             values=interactome_id,
                                             type='string')
@@ -165,6 +161,10 @@ class HCXFromCDAPSCXHierarchy(object):
                 server = self._server
             hierarchy.set_network_attribute('HCX::interactionNetworkHost',
                                             values=server,
+                                            type='string')
+        elif interactome_name is not None:
+            hierarchy.set_network_attribute('HCX::interactionNetworkName',
+                                            values=interactome_name,
                                             type='string')
 
     def _get_mapping_of_node_names_to_ids(self, network):
@@ -224,6 +224,44 @@ class HCXFromCDAPSCXHierarchy(object):
                 return aspect
         return None
 
+    def _get_style_from_network(self, path_to_style_network):
+        """
+        Retrieves the style network from a given file and fetches the
+        `visualEditorProperties` aspect associated with that network.
+
+        :param path_to_style_network: The path to the style network file.
+        :type path_to_style_network: str
+        :return: A tuple containing the style network and its associated
+                 `visualEditorProperties` aspect.
+        :rtype: tuple(:py:class:`ndex2.cx2.CX2Network`, dict or None)
+        """
+        rawcx2_factory = RawCX2NetworkFactory()
+        style_network = rawcx2_factory.get_cx2network(path_to_style_network)
+        visual_editor_props = self._get_visual_editor_properties_aspect_from_network(style_network)
+        return style_network, visual_editor_props
+
+    def _convert_and_style_network(self, network, style_filename):
+        """
+        Converts the given network into the CX2 format and applies the specified style.
+
+        :param network: The network to be converted and styled.
+        :type network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :param style_filename: The filename of the style to be applied.
+        :type style_filename: str
+        :return: The converted and styled network.
+        :rtype: :py:class:`ndex2.cx2.CX2Network`
+        """
+        cx_factory = NoStyleCXToCX2NetworkFactory()
+        converted_network = cx_factory.get_cx2network(network)
+        path_to_style_network = os.path.join(os.path.dirname(cellmaps_generate_hierarchy.__file__), style_filename)
+        style_network, visual_editor_props = self._get_style_from_network(path_to_style_network)
+        converted_network.set_visual_properties(style_network.get_visual_properties())
+
+        if visual_editor_props is not None:
+            converted_network.add_opaque_aspect(visual_editor_props)
+
+        return converted_network
+
     def get_converted_hierarchy(self, hierarchy=None, parent_network=None):
         """
         Converts hierarchy in CX CDAPS format into HCX format and parent network
@@ -262,28 +300,16 @@ class HCXFromCDAPSCXHierarchy(object):
         hierarchy_url = None
         interactome_url = None
 
-        cx_factory = NoStyleCXToCX2NetworkFactory()
-        parent_network_cx2 = cx_factory.get_cx2network(parent_network)
+        parent_network_cx2 = self._convert_and_style_network(parent_network, 'interactome_style.cx2')
 
-        rawcx2_factory = RawCX2NetworkFactory()
-        path_to_style_network = os.path.join(os.path.dirname(cellmaps_generate_hierarchy.__file__),
-                                             'interactome_style.cx2')
-        style_network = rawcx2_factory.get_cx2network(path_to_style_network)
-        parent_network_cx2.set_visual_properties(style_network.get_visual_properties())
-
-        visual_editor_props = self._get_visual_editor_properties_aspect_from_network(style_network)
-        if visual_editor_props is not None:
-            parent_network_cx2.add_opaque_aspect(visual_editor_props)
-
+        interactome_id = None
         if self._server is not None and self._user is not None and self._password is not None:
             interactome_id = self._save_network(parent_network_cx2)
             interactome_url = self._generate_url(interactome_id)
-            self._add_hierarchy_network_attributes(hierarchy,
-                                                   interactome_id=interactome_id)
-        else:
-            # TODO: interactome name should be set earlier and passed to the function (not hardcoded)
-            self._add_hierarchy_network_attributes(hierarchy,
-                                                   interactome_name="hierarchy_parent.cx2")
+
+        # TODO: interactome name should be set earlier and passed to the function (not hardcoded)
+        self._add_hierarchy_network_attributes(hierarchy, interactome_id=interactome_id,
+                                               interactome_name="hierarchy_parent.cx2")
 
         root_nodes = self._get_root_nodes(hierarchy)
 
@@ -295,15 +321,7 @@ class HCXFromCDAPSCXHierarchy(object):
         self._add_members_node_attribute(hierarchy,
                                          interactome_name_map=interactome_name_map)
 
-        hierarchy_hcx = cx_factory.get_cx2network(hierarchy)
-        path_to_style_network = os.path.join(os.path.dirname(cellmaps_generate_hierarchy.__file__),
-                                             'hierarchy_style.cx2')
-        style_network = rawcx2_factory.get_cx2network(path_to_style_network)
-        hierarchy_hcx.set_visual_properties(style_network.get_visual_properties())
-
-        visual_editor_props = self._get_visual_editor_properties_aspect_from_network(style_network)
-        if visual_editor_props is not None:
-            hierarchy_hcx.add_opaque_aspect(visual_editor_props)
+        hierarchy_hcx = self._convert_and_style_network(hierarchy, 'hierarchy_style.cx2')
 
         if self._server is not None and self._user is not None and self._password is not None:
             hierarchy_id = self._save_network(hierarchy_hcx)
