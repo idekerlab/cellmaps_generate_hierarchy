@@ -6,6 +6,7 @@ import time
 import json
 import warnings
 from datetime import date
+import copy
 
 import ndex2
 from ndex2.cx2 import CX2Network
@@ -155,14 +156,15 @@ class CellmapsGenerateHierarchy(object):
         :return: The updated hierarchy with the HCX annotations.
         :rtype: `~ndex2.cx2.CX2Network`
         """
-        hierarchy.add_network_attribute('HCX::interactionNetworkUUID', str(interactome_id))
+        hierarchy_copy = copy.deepcopy(hierarchy)
+        hierarchy_copy.add_network_attribute('HCX::interactionNetworkUUID', str(interactome_id))
         if self._server is None:
             server = 'www.ndexbio.org'
         else:
             server = self._server
-        hierarchy.add_network_attribute('HCX::interactionNetworkHost', str(server))
-        hierarchy.remove_network_attribute('HCX::interactionNetworkName')
-        return hierarchy
+        hierarchy_copy.add_network_attribute('HCX::interactionNetworkHost', str(server))
+        hierarchy_copy.remove_network_attribute('HCX::interactionNetworkName')
+        return hierarchy_copy
 
     def _update_provenance_fields(self):
         """
@@ -468,8 +470,8 @@ class CellmapsGenerateHierarchy(object):
             hierarchyurl = None
             if self._server is not None and self._user is not None and self._password is not None:
                 parent_uuid, parenturl = self._save_network(parent_ppi)
-                hierarchy = self._update_hcx_annotations(hierarchy, parent_uuid)
-                hierarchy_uuid, hierarchyurl = self._save_network(hierarchy)
+                hierarchy_for_ndex = self._update_hcx_annotations(hierarchy, parent_uuid)
+                hierarchy_uuid, hierarchyurl = self._save_network(hierarchy_for_ndex)
 
             hierarchy = hierarchy.to_cx2()
             parent_ppi = parent_ppi.to_cx2()
