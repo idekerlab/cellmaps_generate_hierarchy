@@ -118,6 +118,9 @@ class CellmapsGenerateHierarchy(object):
 
     def _save_network(self, network):
         """
+        This method saves a network to the NDEx server and returns the unique NDEx UUID for the network
+        along with its URL. The visibility of the saved network is determined by the variable `self._visibility`.
+
         :param network: Network to save
         :type network: :py:class:`~ndex2.cx2.CX2Network`
         :return: NDEX UUID of network
@@ -140,7 +143,17 @@ class CellmapsGenerateHierarchy(object):
         return ndexuuid, network_url
 
     def _upadate_hcx_annotations(self, hierarchy, interactome_id):
+        """
+        This method updates the given network hierarchy with specific HCX annotations. These annotations
+        are associated with the interactome ID and the NDEx server where the interactome resides.
 
+        :param hierarchy: The network hierarchy that needs to be updated with HCX annotations.
+        :type hierarchy: `~ndex2.cx2.CX2Network`
+        :param interactome_id: The unique ID (UUID) of the interactome that is associated with the hierarchy.
+        :type interactome_id: str
+        :return: The updated hierarchy with the HCX annotations.
+        :rtype: `~ndex2.cx2.CX2Network`
+        """
         hierarchy.add_network_attribute('HCX::interactionNetworkUUID', str(interactome_id))
         if self._server is None:
             server = 'www.ndexbio.org'

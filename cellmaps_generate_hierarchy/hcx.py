@@ -100,8 +100,19 @@ class HCXFromCDAPSCXHierarchy(object):
                                     interactome_name_map=None,
                                     memberlist_attr_name='CD_MemberList'):
         """
+        Updates the nodes in the given hierarchy by adding a 'HCX::members' attribute. This attribute is
+        derived from the member list associated with each node, and it maps members to their corresponding
+        IDs from the `interactome_name_map`.
 
-        :param hierarchy:
+        :param hierarchy: The network hierarchy that needs to be updated with the 'HCX::members' attribute.
+        :type hierarchy: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :param interactome_name_map: A dictionary mapping member names to their corresponding IDs in the interactome.
+                                     If not provided, an error will be raised.
+        :type interactome_name_map: dict or None, default: None
+        :param memberlist_attr_name: The name of the node attribute which contains the list of members associated
+                                     with each node in the hierarchy.
+        :type memberlist_attr_name: str, default: 'CD_MemberList'
+        :raises CellmapsGenerateHierarchyError: If `interactome_name_map` is None.
         :return:
         """
         if interactome_name_map is None:
@@ -176,6 +187,17 @@ class HCXFromCDAPSCXHierarchy(object):
         return converted_network
 
     def _add_hcx_attributes_to_hierarchy(self, hierarchy, parent_network):
+        """
+        Updates the provided hierarchy with HCX attributes. These attributes applied to
+        network structure, root nodes, and member nodes.
+
+        :param hierarchy: The network hierarchy that needs to be updated with the HCX attributes.
+        :type hierarchy: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :param parent_network: The parent network.
+        :type parent_network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :return: The updated hierarchy with the added HCX attributes.
+        :rtype: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        """
         # TODO: interactome name should be set earlier and passed to the function (not hardcoded)
         self._add_hierarchy_network_attributes(hierarchy, interactome_name="hierarchy_parent.cx2")
 
