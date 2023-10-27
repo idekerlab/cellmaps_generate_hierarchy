@@ -17,83 +17,11 @@ class HCXFromCDAPSCXHierarchy(object):
 
     VISUAL_EDITOR_PROPERTIES_ASPECT = 'visualEditorProperties'
 
-    def __init__(self, ndexserver=None,
-                 ndexuser=None,
-                 ndexpassword=None,
-                 visibility=None):
+    def __init__(self):
         """
         Constructor
-
-        :param ndexserver:
-        :type ndexserver: str
-        :param ndexuser:
-        :type ndexuser: str
-        :param ndexpassword:
-        :type ndexpassword: str
-        :param visibility: If set to ``public``, ``PUBLIC`` or ``True`` sets hierarchy and interactome to
-                           publicly visibility on NDEx, otherwise they are left as private
-        :type visibility: str or bool
         """
-        self._server = ndexserver
-        self._user = ndexuser
-        if ndexpassword is not None and os.path.isfile(ndexpassword):
-            with open(ndexpassword, 'r') as file:
-                self._password = file.readline().strip()
-        else:
-            self._password = ndexpassword
-        self._visibility = None
-        if visibility is not None:
-            if isinstance(visibility, bool):
-                if visibility is True:
-                    self._visibility = 'PUBLIC'
-            elif isinstance(visibility, str):
-                if visibility.lower() == 'public':
-                    self._visibility = 'PUBLIC'
-        self._ndexclient = None
-        self._initialize_ndex_client()
-
-    def _set_ndex_client(self, client):
-        """
-        Sets alternate NDEx client
-        """
-        self._ndexclient = client
-
-    def _initialize_ndex_client(self):
-        """
-        Creates NDEx client
-        :return:
-        """
-        logger.debug('Connecting to NDEx server: ' + str(self._server) +
-                     ' with user: ' + str(self._user))
-        self._ndexclient = ndex2.client.Ndex2(host=self._server,
-                                              username=self._user,
-                                              password=self._password,
-                                              skip_version_check=True)
-
-    def _save_network(self, network):
-        """
-
-        :param network: Network to save
-        :type network: :py:class:`~ndex2.cx2.CX2Network`
-        :return: NDEX UUID of network
-        :rtype: str
-        """
-        logger.debug('Saving network named: ' + str(network.get_name()) +
-                     ' to NDEx with visibility set to: ' + str(self._visibility))
-        try:
-            res = self._ndexclient.save_new_cx2_network(network.to_cx2(),
-                                                        visibility=self._visibility)
-        except Exception as e:
-            raise CellmapsGenerateHierarchyError('An error occurred while saving the network to NDEx: ' + str(e))
-
-        if not isinstance(res, str):
-            raise CellmapsGenerateHierarchyError('Expected a str, but got this: ' + str(res))
-
-        ndexuuid = res[res.rfind('/') + 1:]
-        return ndexuuid
-
-    def _delete_network(self, network_id):
-        self._ndexclient.delete_network(network_id)
+        pass
 
     def _get_root_nodes(self, hierarchy):
         """
@@ -139,11 +67,11 @@ class HCXFromCDAPSCXHierarchy(object):
                                              type='boolean',
                                              overwrite=True)
 
-    def _add_hierarchy_network_attributes(self, hierarchy, interactome_id=None, interactome_name=None):
+    def _add_hierarchy_network_attributes(self, hierarchy, interactome_name=None):
         """
 
         :param hierarchy:
-        :param interactome_id:
+        :param interactome_name:
         :return:
         """
         hierarchy.set_network_attribute('ndexSchema', values='hierarchy_v0.1',
@@ -151,21 +79,9 @@ class HCXFromCDAPSCXHierarchy(object):
         hierarchy.set_network_attribute('HCX::modelFileCount',
                                         values='2',
                                         type='integer')
-        if interactome_id is not None:
-            hierarchy.set_network_attribute('HCX::interactionNetworkUUID',
-                                            values=interactome_id,
-                                            type='string')
-            if self._server is None:
-                server = 'www.ndexbio.org'
-            else:
-                server = self._server
-            hierarchy.set_network_attribute('HCX::interactionNetworkHost',
-                                            values=server,
-                                            type='string')
-        elif interactome_name is not None:
-            hierarchy.set_network_attribute('HCX::interactionNetworkName',
-                                            values=interactome_name,
-                                            type='string')
+        hierarchy.set_network_attribute('HCX::interactionNetworkName',
+                                        values=interactome_name,
+                                        type='string')
 
     def _get_mapping_of_node_names_to_ids(self, network):
         """
@@ -207,9 +123,6 @@ class HCXFromCDAPSCXHierarchy(object):
             hierarchy.set_node_attribute(node_id, 'HCX::members',
                                          values=list(member_ids), type='list_of_long',
                                          overwrite=True)
-
-    def _generate_url(self, uuid):
-        return 'https://' + self._server + '/cytoscape/network/' + str(uuid)
 
     def _get_visual_editor_properties_aspect_from_network(self, network=None):
         """
@@ -262,54 +175,9 @@ class HCXFromCDAPSCXHierarchy(object):
 
         return converted_network
 
-    def get_converted_hierarchy(self, hierarchy=None, parent_network=None):
-        """
-        Converts hierarchy in CX CDAPS format into HCX format and parent network
-        from CX format into CX2 format
-
-        For the parent network aka interactome simply upload the network to NDEx and also use the
-        python client to get CX2 as a list object via json load and set that as 2nd element
-        in tuple returned
-
-        This transformation is done by first annotating the hierarchy network
-        with needed HCX annotations, namely going with filesystem based HCX format
-        where the network attribute: ``HCX::interactionNetworkUUID`` is set to UUID of network
-        uploaded to NDEx.
-
-        For necessary annotations see: https://cytoscape.org/cx/cx2/hcx-specification/
-
-        and for code implementing these annotations see:
-        https://github.com/idekerlab/hiviewutils/blob/main/hiviewutils/hackedhcx.py
-
-        Once the hierarchy is annotated upload it to NDEx and then use the python client
-        to get CX2 as a list object via json load and set that as 1st element in tuple
-        returned. Uploading networks to NDEx returns a URL that can be parsed to get UUID of
-        the networks
-
-        The 3rd, 4th elements returned should be the user viewable URLs of the hierarchy
-        and parent networks put onto NDEx
-
-        :param hierarchy: Hierarchy network
-        :type hierarchy: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
-        :param parent_network: Parent network
-        :type parent_network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
-        :return: (hierarchy as :py:class:`list`,
-                  parent ppi as :py:class:`list`, hierarchyurl, parenturl)
-        :rtype: tuple
-        """
-        hierarchy_url = None
-        interactome_url = None
-
-        parent_network_cx2 = self._convert_and_style_network(parent_network, 'interactome_style.cx2')
-
-        interactome_id = None
-        if self._server is not None and self._user is not None and self._password is not None:
-            interactome_id = self._save_network(parent_network_cx2)
-            interactome_url = self._generate_url(interactome_id)
-
+    def _add_hcx_attributes_to_hierarchy(self, hierarchy, parent_network):
         # TODO: interactome name should be set earlier and passed to the function (not hardcoded)
-        self._add_hierarchy_network_attributes(hierarchy, interactome_id=interactome_id,
-                                               interactome_name="hierarchy_parent.cx2")
+        self._add_hierarchy_network_attributes(hierarchy, interactome_name="hierarchy_parent.cx2")
 
         root_nodes = self._get_root_nodes(hierarchy)
 
@@ -320,11 +188,37 @@ class HCXFromCDAPSCXHierarchy(object):
 
         self._add_members_node_attribute(hierarchy,
                                          interactome_name_map=interactome_name_map)
+        return hierarchy
 
-        hierarchy_hcx = self._convert_and_style_network(hierarchy, 'hierarchy_style.cx2')
+    def get_converted_hierarchy(self, hierarchy=None, parent_network=None):
+        """
+        Converts hierarchy in CX CDAPS format into HCX format and parent network
+        from CX format into CX2 format
 
-        if self._server is not None and self._user is not None and self._password is not None:
-            hierarchy_id = self._save_network(hierarchy_hcx)
-            hierarchy_url = self._generate_url(hierarchy_id)
+        For the parent network aka interactome, it translates it from cx to cx2 using
+        `~ndex2.cx2.NoStyleCXToCX2NetworkFactory` class.
 
-        return hierarchy_hcx.to_cx2(), parent_network_cx2.to_cx2(), hierarchy_url, interactome_url
+        This transformation is done by first annotating the hierarchy network
+        with needed HCX annotations, namely going with filesystem based HCX format
+        where the network attribute: ``HCX::interactionNetworkName`` is set to filename of parent ppi.
+
+        For necessary annotations see: https://cytoscape.org/cx/cx2/hcx-specification/
+        and for code implementing these annotations see:
+        https://github.com/idekerlab/hiviewutils/blob/main/hiviewutils/hackedhcx.py
+
+        Once the hierarchy is annotated, it translates it from cx to cx2
+        using `~ndex2.cx2.NoStyleCXToCX2NetworkFactory` class.
+
+        :param hierarchy: Hierarchy network
+        :type hierarchy: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :param parent_network: Parent network
+        :type parent_network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :return: (hierarchy as :py:class:`~ndex2.cx2.CX2Network`,
+                  parent ppi as :py:class:`~ndex2.cx2.CX2Network`)
+        :rtype: tuple
+        """
+        parent_network_cx2 = self._convert_and_style_network(parent_network, 'interactome_style.cx2')
+        hierarchy_with_hcx_attributes = self._add_hcx_attributes_to_hierarchy(hierarchy, parent_network)
+        hierarchy_hcx = self._convert_and_style_network(hierarchy_with_hcx_attributes, 'hierarchy_style.cx2')
+
+        return hierarchy_hcx, parent_network_cx2

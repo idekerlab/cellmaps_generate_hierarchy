@@ -4,12 +4,11 @@
 """Tests for `CDAPSHierarchyGenerator`."""
 
 import os
-import io
 from datetime import date
 import shutil
 import tempfile
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 import json
 import ndex2
 from io import StringIO
@@ -49,7 +48,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
                 f.write('Cluster2-9\t4\t0 1 19 48\t55\n')
                 f.write('Cluster1-0\t4\t17 26 27 64\t11\n')
 
-            converter = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+            converter = HCXFromCDAPSCXHierarchy()
             gen = CDAPSHiDeFHierarchyGenerator(hcxconverter=converter)
             self.assertEqual(77, gen._get_max_node_id(nodes_file))
 
@@ -57,7 +56,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
             shutil.rmtree(temp_dir)
 
     def test_write_members_for_row(self):
-        converter = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        converter = HCXFromCDAPSCXHierarchy()
         gen = CDAPSHiDeFHierarchyGenerator(hcxconverter=converter)
         data = ''
         out_stream = StringIO(data)
@@ -67,7 +66,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
                          out_stream.getvalue())
 
     def test_update_cluster_node_map(self):
-        converter = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        converter = HCXFromCDAPSCXHierarchy()
         gen = CDAPSHiDeFHierarchyGenerator(hcxconverter=converter)
         cluster_node_map = {}
         max_node, cur_node = gen.update_cluster_node_map(cluster_node_map,
@@ -83,7 +82,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
         self.assertEqual({'Cluster-0-0': 5}, cluster_node_map)
 
     def test_update_persistence_map(self):
-        converter = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+        converter = HCXFromCDAPSCXHierarchy()
         gen = CDAPSHiDeFHierarchyGenerator(hcxconverter=converter)
         persistence_map = {}
         gen.update_persistence_map(persistence_map, 1, 'val')
@@ -105,7 +104,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
                         os.path.join(temp_dir, 'hidef_output.pruned.edges'))
             data = ''
             out_stream = StringIO(data)
-            converter = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+            converter = HCXFromCDAPSCXHierarchy()
             gen = CDAPSHiDeFHierarchyGenerator(hcxconverter=converter)
             self.assertIsNone(gen.convert_hidef_output_to_cdaps(out_stream,
                                                                 temp_dir))
@@ -154,7 +153,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
             mockprov.register_dataset = MagicMock()
             mockprov.register_dataset.side_effect = ['XXX', 'YYY']
             mockprov.get_default_date_format_str = MagicMock(return_value='%Y-%m-%d')
-            converter = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+            converter = HCXFromCDAPSCXHierarchy()
             gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov,
                                                author='author',
                                                version='version',
@@ -215,7 +214,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
             mockprov.register_dataset = MagicMock()
             mockprov.register_dataset.side_effect = ['X', 'Y', 'Z']
             mockprov.get_default_date_format_str = MagicMock(return_value='%Y-%m-%d')
-            converter = HCXFromCDAPSCXHierarchy(ndexserver='server', ndexuser='user', ndexpassword='password')
+            converter = HCXFromCDAPSCXHierarchy()
             gen = CDAPSHiDeFHierarchyGenerator(provenance_utils=mockprov, hcxconverter=converter)
             gen._register_hidef_output_files(temp_dir)
             self.assertEqual(['X', 'Y', 'Z'], gen.get_generated_dataset_ids())

@@ -6,13 +6,15 @@ import time
 import json
 import warnings
 from datetime import date
+
+import ndex2
+from ndex2.cx2 import CX2Network
 from tqdm import tqdm
 from cellmaps_utils import constants
 from cellmaps_utils import logutils
 from cellmaps_utils.provenance import ProvenanceUtil
 import cellmaps_generate_hierarchy
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
-
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,7 @@ class CellmapsGenerateHierarchy(object):
     Runs steps necessary to create PPI from embedding and to
     generate a hierarchy
     """
+
     def __init__(self, outdir=None,
                  inputdirs=[],
                  ppigen=None,
@@ -32,7 +35,12 @@ class CellmapsGenerateHierarchy(object):
                  layoutalgo=None,
                  skip_logging=True,
                  provenance_utils=ProvenanceUtil(),
-                 input_data_dict=None):
+                 input_data_dict=None,
+                 ndexserver=None,
+                 ndexuser=None,
+                 ndexpassword=None,
+                 visibility=None
+                 ):
         """
         Constructor
 
@@ -48,6 +56,15 @@ class CellmapsGenerateHierarchy(object):
         :param skip_logging: If ``True`` skip logging, if ``None`` or ``False`` do NOT skip logging
         :type skip_logging: bool
         :param provenance_utils:
+        :param ndexserver:
+        :type ndexserver: str
+        :param ndexuser:
+        :type ndexuser: str
+        :param ndexpassword:
+        :type ndexpassword: str
+        :param visibility: If set to ``public``, ``PUBLIC`` or ``True`` sets hierarchy and interactome to
+                           publicly visibility on NDEx, otherwise they are left as private
+        :type visibility: str or bool
         """
         logger.debug('In constructor')
         if outdir is None:
@@ -69,6 +86,69 @@ class CellmapsGenerateHierarchy(object):
         self._input_data_dict = input_data_dict
         self._provenance_utils = provenance_utils
         self._layoutalgo = layoutalgo
+        self._server = ndexserver
+        self._user = ndexuser
+        if ndexpassword is not None and os.path.isfile(ndexpassword):
+            with open(ndexpassword, 'r') as file:
+                self._password = file.readline().strip()
+        else:
+            self._password = ndexpassword
+        self._visibility = None
+        if visibility is not None:
+            if isinstance(visibility, bool):
+                if visibility is True:
+                    self._visibility = 'PUBLIC'
+            elif isinstance(visibility, str):
+                if visibility.lower() == 'public':
+                    self._visibility = 'PUBLIC'
+        self._ndexclient = None
+        self._initialize_ndex_client()
+
+    def _initialize_ndex_client(self):
+        """
+        Creates NDEx client
+        :return:
+        """
+        logger.debug('Connecting to NDEx server: ' + str(self._server) +
+                     ' with user: ' + str(self._user))
+        self._ndexclient = ndex2.client.Ndex2(host=self._server,
+                                              username=self._user,
+                                              password=self._password,
+                                              skip_version_check=True)
+
+    def _save_network(self, network):
+        """
+        :param network: Network to save
+        :type network: :py:class:`~ndex2.cx2.CX2Network`
+        :return: NDEX UUID of network
+        :rtype: str
+        """
+        logger.debug('Saving network named: ' + str(network.get_name()) +
+                     ' to NDEx with visibility set to: ' + str(self._visibility))
+        try:
+            res = self._ndexclient.save_new_cx2_network(network.to_cx2(),
+                                                        visibility=self._visibility)
+        except Exception as e:
+            raise CellmapsGenerateHierarchyError('An error occurred while saving the network to NDEx: ' + str(e))
+
+        if not isinstance(res, str):
+            raise CellmapsGenerateHierarchyError('Expected a str, but got this: ' + str(res))
+
+        ndexuuid = res[res.rfind('/') + 1:]
+        network_url = f"https://{self._server.lstrip('https://').lstrip('http://')}/cytoscape/network/{ndexuuid}"
+
+        return ndexuuid, network_url
+
+    def _upadate_hcx_annotations(self, hierarchy, interactome_id):
+
+        hierarchy.add_network_attribute('HCX::interactionNetworkUUID', str(interactome_id))
+        if self._server is None:
+            server = 'www.ndexbio.org'
+        else:
+            server = self._server
+        hierarchy.add_network_attribute('HCX::interactionNetworkHost', str(server))
+        hierarchy.remove_network_attribute('HCX::interactionNetworkName')
+        return hierarchy
 
     def _update_provenance_fields(self):
         """
@@ -368,8 +448,17 @@ class CellmapsGenerateHierarchy(object):
                                                                                         dest_path=cx_path))
 
             # generate hierarchy and get parent ppi
-            hierarchy, parent_ppi, hierarchyurl, \
-                parenturl = self._hiergen.get_hierarchy(ppi_network_prefix_paths)
+            hierarchy, parent_ppi = self._hiergen.get_hierarchy(ppi_network_prefix_paths)
+
+            parenturl = None
+            hierarchyurl = None
+            if self._server is not None and self._user is not None and self._password is not None:
+                parent_uuid, parenturl = self._save_network(parent_ppi)
+                hierarchy = self._upadate_hcx_annotations(hierarchy, parent_uuid)
+                hierarchy_uuid, hierarchyurl = self._save_network(hierarchy)
+
+            hierarchy = hierarchy.to_cx2()
+            parent_ppi = parent_ppi.to_cx2()
 
             # TODO: Need to support layout with HCX
             warnings.warn("Layout disabled due to incompatibilities with HCX format")

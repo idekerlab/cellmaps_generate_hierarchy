@@ -149,10 +149,7 @@ def main(args):
                                         min_diff=theargs.min_diff,
                                         provenance_utils=provenance)
 
-        converter = HCXFromCDAPSCXHierarchy(ndexserver=theargs.ndexserver,
-                                            ndexuser=theargs.ndexuser,
-                                            ndexpassword=theargs.ndexpassword,
-                                            visibility=theargs.visibility)
+        converter = HCXFromCDAPSCXHierarchy()
 
         hiergen = CDAPSHiDeFHierarchyGenerator(author='cellmaps_generate_hierarchy',
                                                refiner=refiner,
@@ -176,7 +173,12 @@ def main(args):
                                          layoutalgo=layoutalgo,
                                          skip_logging=theargs.skip_logging,
                                          input_data_dict=input_data_dict,
-                                         provenance_utils=provenance).run()
+                                         provenance_utils=provenance,
+                                         ndexserver=theargs.ndexserver,
+                                         ndexuser=theargs.ndexuser,
+                                         ndexpassword=theargs.ndexpassword,
+                                         visibility=theargs.visibility
+                                         ).run()
     except Exception as e:
         logger.exception('Caught exception: ' + str(e))
         return 2
