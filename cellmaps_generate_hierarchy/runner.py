@@ -143,7 +143,7 @@ class CellmapsGenerateHierarchy(object):
 
         return ndexuuid, network_url
 
-    def _upadate_hcx_annotations(self, hierarchy, interactome_id):
+    def _update_hcx_annotations(self, hierarchy, interactome_id):
         """
         This method updates the given network hierarchy with specific HCX annotations. These annotations
         are associated with the interactome ID and the NDEx server where the interactome resides.
