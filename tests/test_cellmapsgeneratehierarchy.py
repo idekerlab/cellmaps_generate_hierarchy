@@ -127,13 +127,13 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
         mock_hierarchy = CX2Network()
         interactome_id = "test-uuid"
         myobj = CellmapsGenerateHierarchy(outdir='dir', ndexserver='server', ndexuser='user', ndexpassword='password')
-        updated_hierarchy = myobj._upadate_hcx_annotations(mock_hierarchy, interactome_id)
+        updated_hierarchy = myobj._update_hcx_annotations(mock_hierarchy, interactome_id)
 
         self.assertEqual(updated_hierarchy.get_network_attributes()['HCX::interactionNetworkUUID'], interactome_id)
         self.assertEqual(updated_hierarchy.get_network_attributes()['HCX::interactionNetworkHost'], 'server')
         self.assertFalse('HCX::interactionNetworkName' in updated_hierarchy.get_network_attributes())
 
         myobj._server = None
-        updated_hierarchy = myobj._upadate_hcx_annotations(mock_hierarchy, interactome_id)
+        updated_hierarchy = myobj._update_hcx_annotations(mock_hierarchy, interactome_id)
         self.assertEqual(updated_hierarchy.get_network_attributes()['HCX::interactionNetworkHost'], 'www.ndexbio.org')
 
