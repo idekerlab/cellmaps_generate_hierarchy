@@ -138,7 +138,8 @@ class CellmapsGenerateHierarchy(object):
             raise CellmapsGenerateHierarchyError('Expected a str, but got this: ' + str(res))
 
         ndexuuid = res[res.rfind('/') + 1:]
-        network_url = f"https://{self._server.lstrip('https://').lstrip('http://')}/cytoscape/network/{ndexuuid}"
+        network_url = (f"https://{self._server.replace('https://', '').replace('http://','')}"
+                       f"/cytoscape/network/{ndexuuid}")
 
         return ndexuuid, network_url
 
