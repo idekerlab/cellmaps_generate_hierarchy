@@ -468,7 +468,7 @@ class CellmapsGenerateHierarchy(object):
             hierarchyurl = None
             if self._server is not None and self._user is not None and self._password is not None:
                 parent_uuid, parenturl = self._save_network(parent_ppi)
-                hierarchy = self._upadate_hcx_annotations(hierarchy, parent_uuid)
+                hierarchy = self._update_hcx_annotations(hierarchy, parent_uuid)
                 hierarchy_uuid, hierarchyurl = self._save_network(hierarchy)
 
             hierarchy = hierarchy.to_cx2()
