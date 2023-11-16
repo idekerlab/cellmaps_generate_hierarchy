@@ -30,15 +30,30 @@ For information invoke :code:`cellmaps_generate_hierarchycmd.py -h`
 
   cellmaps_generate_hierarchycmd.py [outdir] [--coembedding_dirs COEMBEDDINGDIRS [COEMBEDDINGDIRS ...]] [OPTIONS]
 
+.. code-block::
+
+  cellmaps_generate_hierarchycmd.py [outdir] [--mode ndexsave] [--ndexuser NDEXUSER] [--ndexpassword NDEXPASSWORD]
+
 **Arguments**
 
 - ``outdir``
-    The directory where the output will be written to.
+    The directory where the output will be written to or directory where hierarchy.cx2 and parent_hierarchy.cx2 was
+    saved.
 
-*Required*
+*Possible modes*
+
+- ``--mode ['run', 'ndexsave']``
+    Processing mode. If set to ``run`` then hierarchy is generated. If set to ``ndexsave``,
+    it is assumes hierarchy has been generated (named hierarchy.cx2 and parent_hierarchy.cx2) and put in ``outdir``
+    passed in via the command line and this tool will save the hierarchy to NDEx using ``--ndexserver``, ``--ndexuser``,
+    and ``--ndexpassword`` credentials
+
+*Required in 'run' mode*
 
 - ``--coembedding_dirs COEMBEDDINGDIRS [COEMBEDDINGDIRS ...]``
     Directories where coembedding was run. This is a required argument and multiple directories can be provided.
+
+*Required in 'ndexsave' mode*
 
 - ``--ndexuser NDEXUSER``
     NDEx user account.
@@ -47,6 +62,9 @@ For information invoke :code:`cellmaps_generate_hierarchycmd.py -h`
     NDEx password. This can either be the password itself or a path to a file containing the password.
 
 *Optional*
+
+- ``--ndexserver NDEXSERVER``
+    Server where the hierarchy can be converted to HCX and saved. Default is ``idekerlab.ndexbio.org``.
 
 - ``--name NAME``
     Name of this run, needed for FAIRSCAPE. If unset, the name value from the directory specified by ``--coembedding_dir`` will be used.
@@ -74,9 +92,6 @@ For information invoke :code:`cellmaps_generate_hierarchycmd.py -h`
 
 - ``--skip_layout``
     If set, skips the layout of hierarchy step.
-
-- ``--ndexserver NDEXSERVER``
-    Server where the hierarchy can be converted to HCX and saved. Default is ``idekerlab.ndexbio.org``.
 
 - ``--visibility``
     If set, the Hierarchy and interactome network loaded onto NDEx will be publicly visible.
