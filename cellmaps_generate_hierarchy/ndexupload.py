@@ -16,7 +16,7 @@ class NDExHierarchyUploader(object):
     Base class for uploading hierarchy and its parent network to NDEx.
     """
 
-    def __init__(self, ndexserver, ndexuser, ndexpassword, visibility):
+    def __init__(self, ndexserver, ndexuser, ndexpassword, visibility=None):
         """
         Constructor
 
