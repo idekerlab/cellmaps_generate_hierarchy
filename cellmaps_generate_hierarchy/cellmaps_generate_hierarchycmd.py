@@ -9,6 +9,8 @@ from cellmaps_utils import logutils
 from cellmaps_utils import constants
 from cellmaps_utils.provenance import ProvenanceUtil
 import cellmaps_generate_hierarchy
+from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
+from cellmaps_generate_hierarchy.ndexupload import NDExHierarchyUploader
 from cellmaps_generate_hierarchy.ppi import CosineSimilarityPPIGenerator
 from cellmaps_generate_hierarchy.hierarchy import CDAPSHiDeFHierarchyGenerator
 from cellmaps_generate_hierarchy.maturehierarchy import HiDeFHierarchyRefiner
@@ -18,8 +20,7 @@ from cellmaps_generate_hierarchy.hcx import HCXFromCDAPSCXHierarchy
 
 logger = logging.getLogger(__name__)
 
-
-CO_EMBEDDINGDIRS='--coembedding_dirs'
+CO_EMBEDDINGDIRS = '--coembedding_dirs'
 
 
 def _parse_arguments(desc, args):
@@ -36,8 +37,15 @@ def _parse_arguments(desc, args):
     parser = argparse.ArgumentParser(description=desc,
                                      formatter_class=constants.ArgParseFormatter)
     parser.add_argument('outdir', help='Output directory')
-    parser.add_argument(CO_EMBEDDINGDIRS, required=True, nargs="+",
+    parser.add_argument(CO_EMBEDDINGDIRS, nargs="+",
                         help='Directories where coembedding was run')
+    parser.add_argument('--mode', choices=['run', 'ndexsave'], default='run',
+                        help='Processing mode. If set to "run" then hierarchy is generated. If '
+                             'set to "ndexsave", it is assumes hierarchy has been generated '
+                             '(named hierarchy.cx2 and parent_hierarchy.cx2) and '
+                             'put in <outdir> passed in via the command line and this tool '
+                             'will save the hierarchy to NDEx using --ndexserver, --ndexuser, and '
+                             '--ndexpassword credentials')
     parser.add_argument('--name',
                         help='Name of this run, needed for FAIRSCAPE. If '
                              'unset, name value from specified '
@@ -139,6 +147,15 @@ def main(args):
 
     try:
         logutils.setup_cmd_logging(theargs)
+
+        if theargs.mode == 'ndexsave':
+            ndex_uploader = NDExHierarchyUploader(theargs.ndexserver, theargs.ndexuser, theargs.ndexpassword,
+                                                  theargs.visibility)
+            return ndex_uploader.upload_hierary_and_parent_netowrk_from_files(theargs.outdir)
+
+        if theargs.coembedding_dirs is None:
+            raise CellmapsGenerateHierarchyError('In run mode, coembedding_dirs parameter is required.')
+
         provenance = ProvenanceUtil()
         ppigen = CosineSimilarityPPIGenerator(embeddingdirs=theargs.coembedding_dirs,
                                               cutoffs=theargs.ppi_cutoffs)
