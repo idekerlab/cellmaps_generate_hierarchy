@@ -13,6 +13,7 @@ from cellmaps_utils.exceptions import CellMapsProvenanceError
 from ndex2.cx2 import CX2Network
 
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
+from cellmaps_generate_hierarchy.ndexupload import NDExHierarchyUploader
 from cellmaps_generate_hierarchy.runner import CellmapsGenerateHierarchy
 
 
@@ -82,19 +83,18 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
 
     def test_password_in_file(self):
         path = os.path.join(os.path.dirname(__file__), 'data', 'test_password')
-        myobj = CellmapsGenerateHierarchy(outdir='dir', ndexserver='server', ndexuser='user', ndexpassword=path)
+        myobj = NDExHierarchyUploader(ndexserver='server', ndexuser='user', ndexpassword=path)
         self.assertEqual(myobj._password, 'password')
 
     def test_visibility(self):
-        myobj = CellmapsGenerateHierarchy(outdir='dir', ndexserver='server', ndexuser='user', ndexpassword='password',
-                                          visibility=True)
+        myobj = NDExHierarchyUploader(ndexserver='server', ndexuser='user', ndexpassword='password', visibility=True)
         self.assertEqual(myobj._visibility, 'PUBLIC')
 
     def test_save_network(self):
         net = MagicMock()
         mock_ndex_client = MagicMock()
         mock_ndex_client.save_new_cx2_network.return_value = 'http://some-url.com/uuid12345'
-        myobj = CellmapsGenerateHierarchy(outdir='dir', ndexserver='server', ndexuser='user', ndexpassword='password')
+        myobj = NDExHierarchyUploader(ndexserver='server', ndexuser='user', ndexpassword='password')
         myobj._ndexclient = mock_ndex_client
         result = myobj._save_network(net)
         self.assertEqual(result, ("uuid12345", 'https://server/cytoscape/network/uuid12345'))
@@ -103,7 +103,7 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
         net = MagicMock()
         mock_ndex_client = MagicMock()
         mock_ndex_client.save_new_cx2_network.return_value = None
-        myobj = CellmapsGenerateHierarchy(outdir='dir', ndexserver='server', ndexuser='user', ndexpassword='password')
+        myobj = NDExHierarchyUploader(ndexserver='server', ndexuser='user', ndexpassword='password')
         myobj._ndexclient = mock_ndex_client
 
         try:
@@ -115,7 +115,7 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
         net = MagicMock()
         mock_ndex_client = MagicMock()
         mock_ndex_client.save_new_cx2_network.side_effect = Exception('NDEx throws exception')
-        myobj = CellmapsGenerateHierarchy(outdir='dir', ndexserver='server', ndexuser='user', ndexpassword='password')
+        myobj = NDExHierarchyUploader(ndexserver='server', ndexuser='user', ndexpassword='password')
         myobj._ndexclient = mock_ndex_client
 
         try:
@@ -125,8 +125,9 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
 
     def test_update_hcx_annotations(self):
         mock_hierarchy = CX2Network()
+        mock_hierarchy._network_attributes = {'HCX::interactionNetworkName': 'mock_name'}
         interactome_id = "test-uuid"
-        myobj = CellmapsGenerateHierarchy(outdir='dir', ndexserver='server', ndexuser='user', ndexpassword='password')
+        myobj = NDExHierarchyUploader(ndexserver='server', ndexuser='user', ndexpassword='password')
         updated_hierarchy = myobj._update_hcx_annotations(mock_hierarchy, interactome_id)
 
         self.assertEqual(updated_hierarchy.get_network_attributes()['HCX::interactionNetworkUUID'], interactome_id)
