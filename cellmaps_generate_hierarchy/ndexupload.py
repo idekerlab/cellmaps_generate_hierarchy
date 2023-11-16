@@ -19,6 +19,16 @@ class NDExHierarchyUploader(object):
     def __init__(self, ndexserver, ndexuser, ndexpassword, visibility):
         """
         Constructor
+
+        :param ndexserver:
+        :type ndexserver: str
+        :param ndexuser:
+        :type ndexuser: str
+        :param ndexpassword:
+        :type ndexpassword: str
+        :param visibility: If set to ``public``, ``PUBLIC`` or ``True`` sets hierarchy and interactome to
+                           publicly visibility on NDEx, otherwise they are left as private
+        :type visibility: str or bool
         """
         self._server = ndexserver
         self._user = ndexuser
@@ -41,7 +51,7 @@ class NDExHierarchyUploader(object):
     def _initialize_ndex_client(self):
         """
         Creates NDEx client
-        :return:
+        :raises CellmapsGenerateHierarchyError: If the NDEx server URL or user credentials are not specified.
         """
         logger.debug('Connecting to NDEx server: ' + str(self._server) +
                      ' with user: ' + str(self._user))
@@ -103,12 +113,37 @@ class NDExHierarchyUploader(object):
         return hierarchy_copy
 
     def save_hierarchy_and_parent_network(self, hierarchy, parent_ppi):
+        """
+        Saves both the hierarchy and its parent network to the NDEx server. This method first saves the parent
+        network, then updates the hierarchy with HCX annotations based on the parent network's UUID, and
+        finally saves the updated hierarchy. It returns the UUIDs and URLs for both the hierarchy and
+        the parent network.
+
+        :param hierarchy: The hierarchy network to be saved.
+        :type hierarchy: :py:class:`~ndex2.cx2.CX2Network`
+        :param parent_ppi: The parent protein-protein interaction network associated with the hierarchy.
+        :type parent_ppi: :py:class:`~ndex2.cx2.CX2Network`
+        :return: UUIDs and URLs for both the parent network and the hierarchy.
+        :rtype: tuple
+        """
         parent_uuid, parenturl = self._save_network(parent_ppi)
         hierarchy_for_ndex = self._update_hcx_annotations(hierarchy, parent_uuid)
         hierarchy_uuid, hierarchyurl = self._save_network(hierarchy_for_ndex)
         return parent_uuid, parenturl, hierarchy_uuid, hierarchyurl
 
     def upload_hierary_and_parent_netowrk_from_files(self, outdir):
+        """
+        Uploads hierarchy and parent network to NDEx from CX2 files located in a specified directory.
+        It first checks the existence of the hierarchy and parent network files, then loads them into
+        network objects, and finally saves them to NDEx using `save_hierarchy_and_parent_network` method.
+
+        :param outdir: The directory where the hierarchy and parent network files are located.
+        :type outdir: str
+        :return: UUIDs and URLs for both the hierarchy and parent network.
+        :rtype: tuple
+        :raises CellmapsGenerateHierarchyError: If the required hierarchy or parent network files do not exist
+                                                in the directory.
+        """
         hierarchy_path = os.path.join(outdir, constants.HIERARCHY_NETWORK_PREFIX + constants.CX2_SUFFIX)
         parent_network_path = os.path.join(outdir, 'hierarchy_parent' + constants.CX2_SUFFIX)
 
