@@ -4,6 +4,7 @@ import argparse
 import sys
 import logging
 import logging.config
+import getpass
 
 from cellmaps_utils import logutils
 from cellmaps_utils import constants
@@ -82,8 +83,8 @@ def _parse_arguments(desc, args):
     parser.add_argument('--ndexuser',
                         help='NDEx user account')
     parser.add_argument('--ndexpassword',
-                        help='NDEx password. This can be the password, '
-                             'a file containing the password')
+                        help='NDEx password. Enter "-" to input password interactively, '
+                             'or provide a file containing the password. Leave blank to not use a password.')
     parser.add_argument('--visibility', action='store_true',
                         help='If set, makes Hierarchy and interactome network loaded onto '
                              'NDEx publicly visible')
@@ -147,7 +148,8 @@ def main(args):
 
     try:
         logutils.setup_cmd_logging(theargs)
-
+        if theargs.ndexpassword == '-':
+            theargs.ndexpassword = getpass.getpass(prompt="Enter NDEx Password: ")
         if theargs.mode == 'ndexsave':
             ndex_uploader = NDExHierarchyUploader(theargs.ndexserver, theargs.ndexuser, theargs.ndexpassword,
                                                   theargs.visibility)
