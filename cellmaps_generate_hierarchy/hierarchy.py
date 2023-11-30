@@ -569,6 +569,9 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
 
     def _clean_tmp_edgelist_files(self, edgelist_files):
         for file in edgelist_files:
-            file_path = os.path.join(os.getcwd(), '_tmp.' + os.path.basename(file))
-            if os.path.exists(file_path):
-                os.remove(file_path)
+            try:
+                file_path = os.path.join(os.getcwd(), '_tmp.' + os.path.basename(file))
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                logger.warning(f"Tried to remove tmp file, but failed due to: {e}")
