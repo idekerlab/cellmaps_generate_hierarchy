@@ -86,7 +86,7 @@ class NDExHierarchyUploader(object):
 
         ndexuuid = res[res.rfind('/') + 1:]
         network_url = (f"https://{self._server.replace('https://', '').replace('http://','')}"
-                       f"/cytoscape/network/{ndexuuid}")
+                       f"/cytoscape/0/networks/{ndexuuid}")
 
         return ndexuuid, network_url
 
