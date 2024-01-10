@@ -1,10 +1,13 @@
 import os
+import time
+
 import ndex2
 import logging
 import copy
 from cellmaps_utils import constants
 
 from ndex2.cx2 import RawCX2NetworkFactory
+from requests import RequestException
 
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
 
@@ -63,7 +66,7 @@ class NDExHierarchyUploader(object):
                                               password=self._password,
                                               skip_version_check=True)
 
-    def _save_network(self, network):
+    def _save_network(self, network, max_retries=3, retry_wait=10):
         """
         This method saves a network to the NDEx server and returns the unique NDEx UUID for the network
         along with its URL. The visibility of the saved network is determined by the variable `self._visibility`.
@@ -75,20 +78,27 @@ class NDExHierarchyUploader(object):
         """
         logger.debug('Saving network named: ' + str(network.get_name()) +
                      ' to NDEx with visibility set to: ' + str(self._visibility))
-        try:
-            res = self._ndexclient.save_new_cx2_network(network.to_cx2(),
-                                                        visibility=self._visibility)
-        except Exception as e:
-            raise CellmapsGenerateHierarchyError('An error occurred while saving the network to NDEx: ' + str(e))
+        retry_num = 1
+        while retry_num <= max_retries:
+            try:
+                res = self._ndexclient.save_new_cx2_network(network.to_cx2(),
+                                                            visibility=self._visibility)
+                if not isinstance(res, str):
+                    raise CellmapsGenerateHierarchyError('Expected a str, but got this: ' + str(res))
 
-        if not isinstance(res, str):
-            raise CellmapsGenerateHierarchyError('Expected a str, but got this: ' + str(res))
+                ndexuuid = res[res.rfind('/') + 1:]
+                network_url = (f"https://{self._server.replace('https://', '').replace('http://', '')}"
+                               f"/cytoscape/0/networks/{ndexuuid}")
 
-        ndexuuid = res[res.rfind('/') + 1:]
-        network_url = (f"https://{self._server.replace('https://', '').replace('http://','')}"
-                       f"/cytoscape/0/networks/{ndexuuid}")
-
-        return ndexuuid, network_url
+                return ndexuuid, network_url
+            except RequestException as re:
+                if retry_num == max_retries:
+                    raise CellmapsGenerateHierarchyError(str(max_retries) + 'attempts to save the network failed.')
+                logger.debug(str(re.response.text))
+                retry_num += 1
+                time.sleep(retry_wait)
+            except Exception as e:
+                raise CellmapsGenerateHierarchyError('An error occurred while saving the network to NDEx: ' + str(e))
 
     def _update_hcx_annotations(self, hierarchy, interactome_id):
         """
