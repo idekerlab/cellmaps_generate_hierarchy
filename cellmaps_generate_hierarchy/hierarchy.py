@@ -520,7 +520,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         cmd.extend(edgelist_files)
         outputprefix = os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX)
         cmd.extend(['--o', outputprefix,
-                    '--alg', algorithm, '--maxres', maxres, '--k', k,
+                    '--alg', algorithm, '--maxres', str(maxres), '--k', str(k),
                     '--skipgml'])
 
         exit_code, out, err = self._run_cmd(cmd)
