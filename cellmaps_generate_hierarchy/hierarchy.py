@@ -41,7 +41,7 @@ class HierarchyGenerator(object):
         """
         return self._generated_dataset_ids
 
-    def get_hierarchy(self, networks):
+    def get_hierarchy(self, networks, algorithm, maxres, k):
         """
         Gets hierarchy
 
@@ -482,7 +482,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                                        values='true', type='boolean',
                                        overwrite=True)
 
-    def get_hierarchy(self, networks):
+    def get_hierarchy(self, networks, algorithm, maxres, k):
         """
         Runs HiDeF to generate hierarchy and registers resulting output
         files with FAIRSCAPE. To do this the method generates edgelist
@@ -520,7 +520,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         cmd.extend(edgelist_files)
         outputprefix = os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX)
         cmd.extend(['--o', outputprefix,
-                    '--alg', 'leiden', '--maxres', '80', '--k', '10',
+                    '--alg', algorithm, '--maxres', maxres, '--k', k,
                     '--skipgml'])
 
         exit_code, out, err = self._run_cmd(cmd)

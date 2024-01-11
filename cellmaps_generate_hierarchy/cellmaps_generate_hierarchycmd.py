@@ -58,6 +58,14 @@ def _parse_arguments(desc, args):
                         help='Name of project running this tool, needed for '
                              'FAIRSCAPE. If unset, project name specified '
                              'in --coembedding_dir directory will be used')
+    parser.add_argument('--k', default=10,
+                        help='HiDeF stability parameter')
+    parser.add_argument('--algorithm', default='leiden',
+                        help='HiDeF clustering algorithm parameter')
+    parser.add_argument('--maxres', default=80,
+                        help='HiDeF max resolution parameter')
+    parser.add_argument('--stability', default=0.,
+                        help='Containment index threshold for pruning hierarchy')
     parser.add_argument('--containment_threshold', default=0.75,
                         help='Containment index threshold for pruning hierarchy')
     parser.add_argument('--jaccard_threshold', default=0.9,
@@ -186,6 +194,9 @@ def main(args):
         return CellmapsGenerateHierarchy(outdir=theargs.outdir,
                                          inputdirs=theargs.coembedding_dirs,
                                          ppigen=ppigen,
+                                         algorithm=theargs.algorithm,
+                                         maxres=theargs.maxres,
+                                         k=theargs.k,
                                          hiergen=hiergen,
                                          layoutalgo=layoutalgo,
                                          skip_logging=theargs.skip_logging,

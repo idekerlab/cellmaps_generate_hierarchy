@@ -28,6 +28,9 @@ class CellmapsGenerateHierarchy(object):
     def __init__(self, outdir=None,
                  inputdirs=[],
                  ppigen=None,
+                 algorithm=None,
+                 maxres=None,
+                 k=None,
                  hiergen=None,
                  name=None,
                  organization_name=None,
@@ -73,6 +76,9 @@ class CellmapsGenerateHierarchy(object):
         self._inputdirs = inputdirs
         self._start_time = int(time.time())
         self._ppigen = ppigen
+        self._algorithm=algorithm,
+        self._maxres=maxres,
+        self._k=k,
         self._hiergen = hiergen
         self._name = name
         self._project_name = project_name
@@ -389,7 +395,7 @@ class CellmapsGenerateHierarchy(object):
                                                                                         dest_path=cx_path))
 
             # generate hierarchy and get parent ppi
-            hierarchy, parent_ppi = self._hiergen.get_hierarchy(ppi_network_prefix_paths)
+            hierarchy, parent_ppi = self._hiergen.get_hierarchy(ppi_network_prefix_paths, self._algorithm, self._maxres, self._k)
 
             parenturl = None
             hierarchyurl = None
