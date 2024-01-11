@@ -125,9 +125,9 @@ def main(args):
     desc = """
     Version {version}
 
-    Takes a list of coembedding file {coembedding_file} files from {coembedding_dirs} directories (corresponding to multiple folds of the same data) that
-    is in TSV format and generates several interaction networks that are fed via -g flag
-    to HiDeF to create a hierarchy.
+    Takes a list of coembedding file {coembedding_file} files from {coembedding_dirs} directories
+    (corresponding to multiple folds of the same data) that is in TSV format and generates several interaction networks
+    that are fed via -g flag to HiDeF to create a hierarchy.
 
     Format of {coembedding_file} where 1st line is header:
 
