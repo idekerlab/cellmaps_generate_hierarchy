@@ -76,9 +76,9 @@ class CellmapsGenerateHierarchy(object):
         self._inputdirs = inputdirs
         self._start_time = int(time.time())
         self._ppigen = ppigen
-        self._algorithm=algorithm,
-        self._maxres=maxres,
-        self._k=k,
+        self._algorithm = algorithm
+        self._maxres = maxres
+        self._k = k
         self._hiergen = hiergen
         self._name = name
         self._project_name = project_name
