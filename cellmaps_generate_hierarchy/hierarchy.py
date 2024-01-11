@@ -524,6 +524,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                     '--skipgml'])
 
         exit_code, out, err = self._run_cmd(cmd)
+        self._clean_tmp_edgelist_files(edgelist_files)
 
         if exit_code != 0:
             logger.error('Cmd failed with exit code: ' + str(exit_code) +
@@ -565,3 +566,12 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         except FileNotFoundError as fe:
             logger.error('No output from hidef: ' + str(fe) + '\n')
         return None, None
+
+    def _clean_tmp_edgelist_files(self, edgelist_files):
+        for file in edgelist_files:
+            try:
+                file_path = os.path.join(os.getcwd(), '_tmp.' + os.path.basename(file))
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                logger.warning(f"Tried to remove tmp file, but failed due to: {e}")

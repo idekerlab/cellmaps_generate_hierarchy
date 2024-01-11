@@ -97,7 +97,7 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
         myobj = NDExHierarchyUploader(ndexserver='server', ndexuser='user', ndexpassword='password')
         myobj._ndexclient = mock_ndex_client
         result = myobj._save_network(net)
-        self.assertEqual(result, ("uuid12345", 'https://server/cytoscape/network/uuid12345'))
+        self.assertEqual(result, ("uuid12345", 'https://server/cytoscape/0/networks/uuid12345'))
 
     def test_save_network_uuid_is_none(self):
         net = MagicMock()

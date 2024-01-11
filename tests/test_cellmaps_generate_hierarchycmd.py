@@ -30,7 +30,7 @@ class TestCellmaps_generate_hierarchy(unittest.TestCase):
 
         self.assertEqual('outdir', res.outdir)
         self.assertEqual(['foo'], res.coembedding_dirs)
-        self.assertEqual(0, res.verbose)
+        self.assertEqual(1, res.verbose)
         self.assertEqual(None, res.logconf)
 
         someargs = ['outdir', '-vv', '--logconf', 'hi',
@@ -39,7 +39,7 @@ class TestCellmaps_generate_hierarchy(unittest.TestCase):
                     '--ndexpassword', 'foopass']
         res = cellmaps_generate_hierarchycmd._parse_arguments('hi', someargs)
 
-        self.assertEqual(2, res.verbose)
+        self.assertEqual(3, res.verbose)
         self.assertEqual('hi', res.logconf)
 
     def test_main(self):
