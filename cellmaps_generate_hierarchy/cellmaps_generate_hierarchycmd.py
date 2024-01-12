@@ -98,6 +98,8 @@ def _parse_arguments(desc, args):
     parser.add_argument('--visibility', action='store_true',
                         help='If set, makes Hierarchy and interactome network loaded onto '
                              'NDEx publicly visible')
+    parser.add_argument('--keep_intermediate_files', action='store_true',
+                        help='If set, ppi network cx files will be saved.')
     parser.add_argument('--skip_logging', action='store_true',
                         help='If set, output.log, error.log '
                              'files will not be created')
@@ -212,7 +214,8 @@ def main(args):
                                          ndexserver=theargs.ndexserver,
                                          ndexuser=theargs.ndexuser,
                                          ndexpassword=theargs.ndexpassword,
-                                         visibility=theargs.visibility
+                                         visibility=theargs.visibility,
+                                         keep_intermediate_files=theargs.keep_intermediate_files
                                          ).run()
     except Exception as e:
         logger.exception('Caught exception: ' + str(e))

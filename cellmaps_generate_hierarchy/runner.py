@@ -42,7 +42,8 @@ class CellmapsGenerateHierarchy(object):
                  ndexserver=None,
                  ndexuser=None,
                  ndexpassword=None,
-                 visibility=None
+                 visibility=None,
+                 keep_intermediate_files=False
                  ):
         """
         Constructor
@@ -96,6 +97,7 @@ class CellmapsGenerateHierarchy(object):
         self._user = ndexuser
         self._password = ndexpassword
         self._visibility = visibility
+        self.keep_intermediate_files = keep_intermediate_files
 
     def _update_provenance_fields(self):
         """
@@ -213,10 +215,17 @@ class CellmapsGenerateHierarchy(object):
         """
         return os.path.join(self._outdir, 'hierarchy_parent')
 
-    def _write_and_register_ppi_network_as_cx(self, ppi_network, dest_path=None):
+    def _remove_ppi_networks(self, networks_paths):
+        for n in networks_paths:
+            try:
+                os.remove(n + constants.CX_SUFFIX)
+            except Exception as e:
+                logger.warning(f"Tried to remove ppi file {n}, but failed due to: {e}")
+
+    def _write_ppi_network_as_cx(self, ppi_network, dest_path=None):
         """
 
-        :param network:
+        :param ppi_network:
         :return:
         """
         logger.debug('Writing PPI network ' + str(ppi_network.get_name()))
@@ -224,6 +233,14 @@ class CellmapsGenerateHierarchy(object):
 
         with open(dest_path, 'w') as f:
             json.dump(ppi_network.to_cx(), f)
+
+    def _register_ppi_network(self, ppi_network, dest_path=None):
+        """
+
+        :param ppi_network:
+        :return:
+        """
+        logger.debug('Registering PPI network ' + str(ppi_network.get_name()))
 
         description = self._description
         description += ' PPI Network file'
@@ -391,11 +408,16 @@ class CellmapsGenerateHierarchy(object):
                 dest_prefix = self.get_ppi_network_dest_file(ppi_network)
                 ppi_network_prefix_paths.append(dest_prefix)
                 cx_path = dest_prefix + constants.CX_SUFFIX
-                generated_dataset_ids.append(self._write_and_register_ppi_network_as_cx(ppi_network,
-                                                                                        dest_path=cx_path))
+                self._write_ppi_network_as_cx(ppi_network, dest_path=cx_path)
+                if self.keep_intermediate_files:
+                    generated_dataset_ids.append(self._register_ppi_network(ppi_network, dest_path=cx_path))
 
             # generate hierarchy and get parent ppi
-            hierarchy, parent_ppi = self._hiergen.get_hierarchy(ppi_network_prefix_paths, self._algorithm, self._maxres, self._k)
+            hierarchy, parent_ppi = self._hiergen.get_hierarchy(ppi_network_prefix_paths, self._algorithm, self._maxres,
+                                                                self._k)
+
+            if not self.keep_intermediate_files:
+                self._remove_ppi_networks(ppi_network_prefix_paths)
 
             parenturl = None
             hierarchyurl = None
