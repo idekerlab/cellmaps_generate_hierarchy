@@ -11,6 +11,7 @@ from cellmaps_utils import constants
 from cellmaps_utils.provenance import ProvenanceUtil
 import cellmaps_generate_hierarchy
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
+from cellmaps_generate_hierarchy.hidefconverter import HierarchyToHiDeFConverter
 from cellmaps_generate_hierarchy.ndexupload import NDExHierarchyUploader
 from cellmaps_generate_hierarchy.ppi import CosineSimilarityPPIGenerator
 from cellmaps_generate_hierarchy.hierarchy import CDAPSHiDeFHierarchyGenerator
@@ -40,13 +41,14 @@ def _parse_arguments(desc, args):
     parser.add_argument('outdir', help='Output directory')
     parser.add_argument(CO_EMBEDDINGDIRS, nargs="+",
                         help='Directories where coembedding was run')
-    parser.add_argument('--mode', choices=['run', 'ndexsave'], default='run',
+    parser.add_argument('--mode', choices=['run', 'ndexsave', 'convert'], default='run',
                         help='Processing mode. If set to "run" then hierarchy is generated. If '
                              'set to "ndexsave", it is assumes hierarchy has been generated '
                              '(named hierarchy.cx2 and parent_hierarchy.cx2) and '
                              'put in <outdir> passed in via the command line and this tool '
                              'will save the hierarchy to NDEx using --ndexserver, --ndexuser, and '
-                             '--ndexpassword credentials')
+                             '--ndexpassword credentials. If set to convert, it is assumes hierarchy has been generated'
+                             ' (named hierarchy.cx2) and it converts the hierarchy to HiDeF .nodes and .edges files')
     parser.add_argument('--name',
                         help='Name of this run, needed for FAIRSCAPE. If '
                              'unset, name value from specified '
@@ -162,6 +164,9 @@ def main(args):
             ndex_uploader = NDExHierarchyUploader(theargs.ndexserver, theargs.ndexuser, theargs.ndexpassword,
                                                   theargs.visibility)
             return ndex_uploader.upload_hierary_and_parent_netowrk_from_files(theargs.outdir)
+        if theargs.mode == 'convert':
+            hidef_converter = HierarchyToHiDeFConverter(theargs.outdir)
+            return hidef_converter.generate_hidef_files()
 
         if theargs.coembedding_dirs is None:
             raise CellmapsGenerateHierarchyError('In run mode, coembedding_dirs parameter is required.')
