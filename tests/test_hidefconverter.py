@@ -11,7 +11,7 @@ class TestHierarchyToHiDeFConverter(unittest.TestCase):
         self.mock_hierarchy = Mock()
 
         with patch('ndex2.cx2.RawCX2NetworkFactory.get_cx2network', return_value=self.mock_hierarchy):
-            self.converter = HierarchyToHiDeFConverter(self.directory)
+            self.converter = HierarchyToHiDeFConverter(self.directory, self.directory)
 
     def test_format_node(self):
         self.mock_hierarchy.get_node.return_value = {

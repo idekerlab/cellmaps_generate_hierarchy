@@ -49,6 +49,9 @@ def _parse_arguments(desc, args):
                              'will save the hierarchy to NDEx using --ndexserver, --ndexuser, and '
                              '--ndexpassword credentials. If set to convert, it is assumes hierarchy has been generated'
                              ' (named hierarchy.cx2) and it converts the hierarchy to HiDeF .nodes and .edges files')
+    parser.add_argument('--hcx_dir',
+                        help='Input dir for convert mode with hierarchy in hcx to be converted to HiDeF .nodes '
+                             'and .edges files')
     parser.add_argument('--name',
                         help='Name of this run, needed for FAIRSCAPE. If '
                              'unset, name value from specified '
@@ -169,7 +172,8 @@ def main(args):
                                                   theargs.visibility)
             return ndex_uploader.upload_hierary_and_parent_netowrk_from_files(theargs.outdir)
         if theargs.mode == 'convert':
-            hidef_converter = HierarchyToHiDeFConverter(theargs.outdir)
+            hcx_dir = theargs.hcx_dir if theargs.hcx_dir else theargs.outdir
+            hidef_converter = HierarchyToHiDeFConverter(hcx_dir, theargs.outdir)
             return hidef_converter.generate_hidef_files()
 
         if theargs.coembedding_dirs is None:

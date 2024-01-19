@@ -14,6 +14,7 @@ from cellmaps_utils import logutils
 from cellmaps_utils.provenance import ProvenanceUtil
 import cellmaps_generate_hierarchy
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
+from cellmaps_generate_hierarchy.hidefconverter import HierarchyToHiDeFConverter
 from cellmaps_generate_hierarchy.ndexupload import NDExHierarchyUploader
 
 logger = logging.getLogger(__name__)
@@ -373,6 +374,28 @@ class CellmapsGenerateHierarchy(object):
                                                              data_dict=data_dict)
         return dataset_id
 
+    def _register_hidef_output_with_gene_names(self, hidef_output_path, hidef_output_name):
+        """
+        """
+        logger.debug(f'Registering hidef output {hidef_output_name} with gene names')
+
+        description = self._description
+        description += f' HiDeF output {hidef_output_name} with gene names file'
+        keywords = self._keywords
+        keywords.extend(['file'])
+
+        # register file with fairscape
+        data_dict = {'name': f'HiDeF output {hidef_output_name} with gene names',
+                     'description': description,
+                     'keywords': keywords,
+                     'data-format': "tsv",
+                     'author': cellmaps_generate_hierarchy.__name__,
+                     'version': cellmaps_generate_hierarchy.__version__,
+                     'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
+        return self._provenance_utils.register_dataset(self._outdir,
+                                                       source_file=hidef_output_path,
+                                                       data_dict=data_dict)
+
     def run(self):
         """
         Runs CM4AI Generate Hierarchy
@@ -448,6 +471,13 @@ class CellmapsGenerateHierarchy(object):
 
             # add datasets created by hiergen object
             generated_dataset_ids.extend(self._hiergen.get_generated_dataset_ids())
+
+            hidef_converter = HierarchyToHiDeFConverter(self._outdir, self._outdir)
+            hidef_nodes, hidef_edges = hidef_converter.generate_hidef_files()
+            generated_dataset_ids.append(
+                self._register_hidef_output_with_gene_names(hidef_nodes, 'nodes'))
+            generated_dataset_ids.append(
+                self._register_hidef_output_with_gene_names(hidef_edges, 'edges'))
 
             # register generated datasets
             self._register_computation(generated_dataset_ids=generated_dataset_ids)
