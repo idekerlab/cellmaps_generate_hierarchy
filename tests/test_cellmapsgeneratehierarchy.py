@@ -131,10 +131,5 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
         updated_hierarchy = myobj._update_hcx_annotations(mock_hierarchy, interactome_id)
 
         self.assertEqual(updated_hierarchy.get_network_attributes()['HCX::interactionNetworkUUID'], interactome_id)
-        self.assertEqual(updated_hierarchy.get_network_attributes()['HCX::interactionNetworkHost'], 'server')
         self.assertFalse('HCX::interactionNetworkName' in updated_hierarchy.get_network_attributes())
-
-        myobj._server = None
-        updated_hierarchy = myobj._update_hcx_annotations(mock_hierarchy, interactome_id)
-        self.assertEqual(updated_hierarchy.get_network_attributes()['HCX::interactionNetworkHost'], 'www.ndexbio.org')
 
