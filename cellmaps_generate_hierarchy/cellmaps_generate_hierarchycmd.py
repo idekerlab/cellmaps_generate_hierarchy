@@ -86,6 +86,8 @@ def _parse_arguments(desc, args):
                              'a value of 0.1 means to generate PPI input network using the '
                              'top ten percent of coembedding entries. Each cutoff generates '
                              'another PPI network')
+    parser.add_argument('--hierarchy_parent_cutoff', default=0.01,
+                        help='PPI network cutoff to be chosen as hierarchy parent network.')
     parser.add_argument('--skip_layout', action='store_true',
                         help='If set, skips layout of hierarchy step')
     parser.add_argument('--ndexserver', default='idekerlab.ndexbio.org',
@@ -188,6 +190,7 @@ def main(args):
         hiergen = CDAPSHiDeFHierarchyGenerator(author='cellmaps_generate_hierarchy',
                                                refiner=refiner,
                                                hcxconverter=converter,
+                                               hierarchy_parent_cutoff=float(theargs.hierarchy_parent_cutoff),
                                                version=cellmaps_generate_hierarchy.__version__,
                                                provenance_utils=provenance)
         if theargs.skip_layout is True:

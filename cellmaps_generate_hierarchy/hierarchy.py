@@ -1,4 +1,3 @@
-
 import os
 import sys
 import csv
@@ -21,6 +20,7 @@ class HierarchyGenerator(object):
     that is output in CX format following
     CDAPS style
     """
+
     def __init__(self,
                  provenance_utils=ProvenanceUtil(),
                  author='cellmaps_generate_hierarchy',
@@ -78,6 +78,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                  provenance_utils=ProvenanceUtil(),
                  refiner=None,
                  hcxconverter=None,
+                 hierarchy_parent_cutoff=0.01,
                  author='cellmaps_generate_hierarchy',
                  version=cellmaps_generate_hierarchy.__version__):
         """
@@ -96,6 +97,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         if hcxconverter is None:
             raise CellmapsGenerateHierarchyError('HCX converter must be set')
         self._hcxconverter = hcxconverter
+        self._hierarchy_parent_cutoff = hierarchy_parent_cutoff
         self._python = sys.executable
         if os.sep not in hidef_cmd:
             self._hidef_cmd = os.path.join(os.path.dirname(self._python), hidef_cmd)
@@ -284,7 +286,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                                                                         max_node_id)
                 self.update_persistence_map(persistence_map, cur_node_id, row[-1])
                 self.write_members_for_row(out_stream, row,
-                                      cur_node_id)
+                                           cur_node_id)
         edge_file = os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX + '.pruned.edges')
         self.write_communities(out_stream, edge_file, cluster_node_map)
         self.write_persistence_node_attribute(out_stream, persistence_map)
@@ -336,6 +338,38 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                 max_file_size = file_size
         return largest_network
 
+    def _get_parent_net_with_specified_cutoff(self, network, path, closest_net, closest_path,
+                                              min_difference=float('inf')):
+        """
+        Determines the network with cutoff closest to the hierarchy_parent_cutoff value.
+
+        :param network: The network to be evaluated.
+        :type network: Network
+        :param path: The file path or identifier for the network.
+        :type path: str
+        :param closest_net: Currently identified the closest network.
+        :type closest_net: Network
+        :param closest_path: File path or identifier for the current closest network.
+        :type closest_path: str
+        :param min_difference: Minimum difference between the cutoff values, defaults to float('inf').
+        :type min_difference: float
+        :return: A tuple of the closest network, its path, and the minimum difference in cutoff values.
+        :rtype: tuple
+        """
+        cutoff_attr = network.get_network_attribute('cutoff')
+        cutoff_value = 1 if cutoff_attr is None else float(cutoff_attr['v'])
+        if cutoff_value == self._hierarchy_parent_cutoff:
+            return network, path, 0
+        else:
+            difference = abs(self._hierarchy_parent_cutoff - cutoff_value)
+
+            if difference < min_difference:
+                min_difference = difference
+                closest_net = network
+                closest_path = path
+
+        return closest_net, closest_path, min_difference
+
     def _get_name_to_id_dict(self, network):
         """
 
@@ -367,8 +401,9 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
 
         :param networks: Prefix paths of input PPI networks
         :type networks: list
-        :return: (largest network path,
+        :return: (parent network path,
                   :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`,
+                  largest network path,
                   :py:class:`list`)
         :rtype: tuple
         """
@@ -379,6 +414,9 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         logger.debug('Largest network name: ' + largest_network.get_name())
         largest_name_to_id = self._get_name_to_id_dict(largest_network)
 
+        parent_net = None
+        parent_path = None
+        min_difference = float('inf')
         for n in networks:
             if largest_network_path == n:
                 net = largest_network
@@ -397,21 +435,23 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                             '\n')
 
                 # register edgelist file with fairscape
-                data_dict = {'name': os.path.basename(dest_path) +
-                             ' PPI id edgelist file',
+                data_dict = {'name': os.path.basename(dest_path) + ' PPI id edgelist file',
                              'description': 'PPI id edgelist file',
                              'data-format': 'tsv',
                              'author': str(self._author),
                              'version': str(self._version),
-                             'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
+                             'date-published': date.today().strftime(
+                                 self._provenance_utils.get_default_date_format_str())}
                 dataset_id = self._provenance_utils.register_dataset(os.path.dirname(dest_path),
                                                                      source_file=dest_path,
                                                                      data_dict=data_dict)
                 self._generated_dataset_ids.append(dataset_id)
+                if min_difference != 0:
+                    parent_net, parent_path, min_difference = self._get_parent_net_with_specified_cutoff(
+                        net, n, parent_net, parent_path, min_difference)
 
-        logger.debug('Largest network name: ' + largest_network.get_name())
-        return (largest_network_path + constants.CX_SUFFIX,
-                largest_network, net_paths)
+        logger.debug('Parent network name: ' + parent_net.get_name())
+        return parent_path + constants.CX_SUFFIX, parent_net, largest_network, net_paths
 
     def _register_hidef_output_files(self, outdir):
         """
@@ -426,8 +466,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
             outfile = os.path.join(outdir,
                                    CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX +
                                    '.' + hidef_file[0])
-            data_dict = {'name': os.path.basename(outfile) +
-                         ' HiDeF output ' + hidef_file[0] + ' file',
+            data_dict = {'name': os.path.basename(outfile) + ' HiDeF output ' + hidef_file[0] + ' file',
                          'description': ' HiDeF output ' + hidef_file[0] + ' file',
                          'data-format': hidef_file[1],
                          'author': str(self._author),
@@ -448,7 +487,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
 
         :param network: Hierarchy
         :type network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
-        :param path: Path to largest PPI network in CX or CX2 format
+        :param path: Path to parent PPI network in CX or CX2 format
         :type path: str
         """
         network.set_network_attribute(name='prov:wasGeneratedBy',
@@ -513,8 +552,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         """
         outdir = os.path.dirname(networks[0])
 
-        (largest_net_path, largest_net,
-         edgelist_files) = self._create_edgelist_files_for_networks(networks)
+        (parent_net_path, parent_net, largest_net, edgelist_files) = self._create_edgelist_files_for_networks(networks)
 
         cmd = [self._python, self._hidef_cmd, '--g']
         cmd.extend(edgelist_files)
@@ -544,8 +582,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                 self.convert_hidef_output_to_cdaps(out_stream, outdir)
 
             # register cdaps json file with fairscape
-            data_dict = {'name': os.path.basename(cdaps_out_file) +
-                         ' CDAPS output JSON file',
+            data_dict = {'name': os.path.basename(cdaps_out_file) + ' CDAPS output JSON file',
                          'description': 'CDAPS output JSON file',
                          'data-format': 'json',
                          'author': str(self._author),
@@ -558,11 +595,11 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
 
             cd = cdapsutil.CommunityDetection(runner=cdapsutil.ExternalResultsRunner())
             hier = cd.run_community_detection(largest_net, algorithm=cdaps_out_file)
-            self._annotate_hierarchy(network=hier, path=largest_net_path)
+            self._annotate_hierarchy(network=hier, path=parent_net_path)
             self._annotate_hierarchy_nodes(network=hier)
 
             return self._hcxconverter.get_converted_hierarchy(hierarchy=hier,
-                                                              parent_network=largest_net)
+                                                              parent_network=parent_net)
         except FileNotFoundError as fe:
             logger.error('No output from hidef: ' + str(fe) + '\n')
         return None, None

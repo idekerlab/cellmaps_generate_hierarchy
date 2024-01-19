@@ -131,6 +131,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
             one_edge_net.set_name('one')
             n_one = one_edge_net.create_node('n1')
             n_two = one_edge_net.create_node('n2')
+            one_edge_net.set_network_attribute(name='cutoff', values=0.7)
             one_edge_net.create_edge(edge_source=n_one, edge_target=n_two)
             one_edge_net_file = os.path.join(temp_dir, 'one_edge')
             cx_networks.append(one_edge_net_file)
@@ -158,9 +159,9 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
                                                author='author',
                                                version='version',
                                                hcxconverter=converter)
-            (largest_net_path, largest_network, net_paths) = gen._create_edgelist_files_for_networks(cx_networks)
-            self.assertEqual(two_edge_net_file + '.cx', largest_net_path)
-            self.assertEqual('two', largest_network.get_name())
+            (parent_net_path, parent_network, net_paths) = gen._create_edgelist_files_for_networks(cx_networks)
+            self.assertEqual(one_edge_net_file + '.cx', parent_net_path)
+            self.assertEqual('one', parent_network.get_name())
             self.assertEqual(2, len(net_paths))
             self.assertTrue(one_edge_net_file +
                             CDAPSHiDeFHierarchyGenerator.EDGELIST_TSV in net_paths)
@@ -243,6 +244,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
             one_edge_net.set_name('one')
             n_one = one_edge_net.create_node('n1')
             n_two = one_edge_net.create_node('n2')
+            one_edge_net.set_network_attribute(name='cutoff', values=0.7)
             one_edge_net.create_edge(edge_source=n_one, edge_target=n_two)
             one_edge_net_file = os.path.join(temp_dir, 'one_edge')
             cx_networks.append(one_edge_net_file)
