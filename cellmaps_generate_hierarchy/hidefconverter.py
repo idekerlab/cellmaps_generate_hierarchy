@@ -15,15 +15,17 @@ class HierarchyToHiDeFConverter:
     """
     HIDEF_OUT_PREFIX = 'hidef_output_gene_names'
 
-    def __init__(self, directory):
+    def __init__(self, input_dir, output_dir):
         """
         Constructor
 
-        :param directory: The directory containing the hierarchy file and where the output files will be stored.
-        :type directory: str
+        :param output_dir: The directory containing the hierarchy file.
+        :type output_dir: str
+        :param output_dir: The directory where the output files will be stored.
+        :type output_dir: str
         """
-        self.directory = directory
-        self.hierarchy_path = os.path.join(directory,
+        self.output_dir = output_dir
+        self.hierarchy_path = os.path.join(input_dir,
                                            cellmaps_constants.HIERARCHY_NETWORK_PREFIX + cellmaps_constants.CX2_SUFFIX)
         try:
             factory = RawCX2NetworkFactory()
@@ -41,8 +43,11 @@ class HierarchyToHiDeFConverter:
             edges = self.hierarchy.get_edges()
             formatted_nodes = self._format_aspect(nodes, self._format_node)
             formatted_edges = self._format_aspect(edges, self._format_edge)
-            self._write_to_file(HierarchyToHiDeFConverter.HIDEF_OUT_PREFIX + '.nodes', formatted_nodes)
-            self._write_to_file(HierarchyToHiDeFConverter.HIDEF_OUT_PREFIX + '.edges', formatted_edges)
+            nodes_path = HierarchyToHiDeFConverter.HIDEF_OUT_PREFIX + '.nodes'
+            self._write_to_file(nodes_path, formatted_nodes)
+            edges_path = HierarchyToHiDeFConverter.HIDEF_OUT_PREFIX + '.edges'
+            self._write_to_file(edges_path, formatted_edges)
+            return nodes_path, edges_path
         except Exception as e:
             logger.error(f"Error during HiDeF generation: {e}")
             raise
@@ -53,7 +58,7 @@ class HierarchyToHiDeFConverter:
         Formats aspect list (nodes or edges) using a specified format function.
 
         :param aspect: A list of aspect IDs (nodes or edges).
-        :type aspect: list
+        :type aspect: dict
         :param format_function: A function to format a single entity.
         :type format_function: function
         :return: A list of formatted nodes or edges.
@@ -111,6 +116,6 @@ class HierarchyToHiDeFConverter:
         :param lines: A list of strings to be written to the file.
         :type lines: list
         """
-        file_path = os.path.join(self.directory, filename)
+        file_path = os.path.join(self.output_dir, filename)
         with open(file_path, 'w') as file:
             file.write('\n'.join(lines))
