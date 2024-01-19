@@ -159,7 +159,7 @@ class TestCDAPSHierarchyGenerator(unittest.TestCase):
                                                author='author',
                                                version='version',
                                                hcxconverter=converter)
-            (parent_net_path, parent_network, net_paths) = gen._create_edgelist_files_for_networks(cx_networks)
+            (parent_net_path, parent_network, largest_net, net_paths) = gen._create_edgelist_files_for_networks(cx_networks)
             self.assertEqual(one_edge_net_file + '.cx', parent_net_path)
             self.assertEqual('one', parent_network.get_name())
             self.assertEqual(2, len(net_paths))
