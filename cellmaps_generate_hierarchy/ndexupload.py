@@ -114,11 +114,6 @@ class NDExHierarchyUploader(object):
         """
         hierarchy_copy = copy.deepcopy(hierarchy)
         hierarchy_copy.add_network_attribute('HCX::interactionNetworkUUID', str(interactome_id))
-        if self._server is None:
-            server = 'www.ndexbio.org'
-        else:
-            server = self._server
-        hierarchy_copy.add_network_attribute('HCX::interactionNetworkHost', str(server))
         hierarchy_copy.remove_network_attribute('HCX::interactionNetworkName')
         return hierarchy_copy
 
