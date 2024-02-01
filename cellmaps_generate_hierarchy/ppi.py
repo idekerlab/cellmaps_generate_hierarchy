@@ -63,8 +63,12 @@ class CosineSimilarityPPIGenerator(PPINetworkGenerator):
         index = []
 
         for fold, embeddingdir in enumerate(self._embeddingdirs):
-            embeddingfile = os.path.join(embeddingdir,
-                                         constants.CO_EMBEDDING_FILE)
+            embeddingfile = os.path.join(embeddingdir, constants.CO_EMBEDDING_FILE)
+            if os.path.exists(os.path.join(embeddingdir, constants.PPI_EMBEDDING_FILE)):
+                embeddingfile = os.path.join(embeddingdir, constants.PPI_EMBEDDING_FILE)
+            elif os.path.exists(os.path.join(embeddingdir, constants.IMAGE_EMBEDDING_FILE)):
+                embeddingfile = os.path.join(embeddingdir, constants.IMAGE_EMBEDDING_FILE)
+
             z = pd.read_table(embeddingfile, sep='\t', index_col=0)
 
             # give the same ordering
