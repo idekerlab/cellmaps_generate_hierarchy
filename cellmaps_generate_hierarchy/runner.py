@@ -409,6 +409,10 @@ class CellmapsGenerateHierarchy(object):
         :return: The parent PPI network object with the new attributes added.
         :rtype: :py:class:`ndex2.cx2.CX2Network`
         """
+        node_name_dict = {}
+        for node_id, node_obj in parent_ppi.get_nodes().items():
+            node_name_dict[node_obj['v']['name']] = node_id
+
         for entry_path in self._gene_node_attributes:
             attr_files = list()
             if os.path.isdir(entry_path):
@@ -433,7 +437,7 @@ class CellmapsGenerateHierarchy(object):
 
                 for _, row in df.iterrows():
                     gene_name = row.iloc[0]
-                    node_id = parent_ppi.lookup_node_id_by_name(gene_name)
+                    node_id = node_name_dict.get(gene_name, None)
                     if node_id is None:
                         continue
 
