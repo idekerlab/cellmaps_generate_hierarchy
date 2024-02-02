@@ -2,12 +2,14 @@
 
 import os
 import logging
+import re
 import time
 import json
 import warnings
 from datetime import date
 
 import ndex2
+import pandas as pd
 from tqdm import tqdm
 from cellmaps_utils import constants
 from cellmaps_utils import logutils
@@ -32,6 +34,7 @@ class CellmapsGenerateHierarchy(object):
                  algorithm=None,
                  maxres=None,
                  k=None,
+                 gene_node_attributes=None,
                  hiergen=None,
                  name=None,
                  organization_name=None,
@@ -81,6 +84,7 @@ class CellmapsGenerateHierarchy(object):
         self._algorithm = algorithm
         self._maxres = maxres
         self._k = k
+        self._gene_node_attributes = gene_node_attributes
         self._hiergen = hiergen
         self._name = name
         self._project_name = project_name
@@ -396,6 +400,41 @@ class CellmapsGenerateHierarchy(object):
                                                        source_file=hidef_output_path,
                                                        data_dict=data_dict)
 
+    def _add_gene_node_attributes(self, parent_ppi):
+        for entry_path in self._gene_node_attributes:
+            attr_files = list()
+            if os.path.isdir(entry_path):
+                attr_files.extend([os.path.join(entry_path, f) for f in os.listdir(entry_path)
+                                    if re.match(r'\d+_' + re.escape(constants.IMAGE_GENE_NODE_ATTR_FILE), f)])
+
+                ppi_attr_file = os.path.join(entry_path, constants.PPI_GENE_NODE_ATTR_FILE)
+                if os.path.exists(ppi_attr_file):
+                    attr_files.append(ppi_attr_file)
+
+                if len(attr_files) < 1:
+                    logger.warning(f"No attribute file found in directory {entry_path}")
+                    continue
+            elif entry_path.endswith('.tsv'):
+                attr_files.append(entry_path)
+            else:
+                logger.warning(f"Entry is neither a directory nor a TSV file: {entry_path}")
+                continue
+
+            for attribute_file in attr_files:
+                df = pd.read_csv(attribute_file, sep='\t', header=0)
+
+                for _, row in df.iterrows():
+                    gene_name = row.iloc[0]
+                    node_id = parent_ppi.lookup_node_id_by_name(gene_name)
+                    if node_id is None:
+                        continue
+
+                    for column_name in df.columns[1:]:
+                        if not pd.isna(row[column_name]):
+                            parent_ppi.add_node_attribute(node_id, column_name, row[column_name])
+
+        return parent_ppi
+
     def run(self):
         """
         Runs CM4AI Generate Hierarchy
@@ -441,6 +480,9 @@ class CellmapsGenerateHierarchy(object):
 
             if not self.keep_intermediate_files:
                 self._remove_ppi_networks(ppi_network_prefix_paths)
+
+            if self._gene_node_attributes is not None:
+                parent_ppi = self._add_gene_node_attributes(parent_ppi)
 
             parenturl = None
             hierarchyurl = None

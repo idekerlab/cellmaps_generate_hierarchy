@@ -50,7 +50,7 @@ def _parse_arguments(desc, args):
                              '--ndexpassword credentials. If set to convert, it is assumes hierarchy has been generated'
                              ' (named hierarchy.cx2) and it converts the hierarchy to HiDeF .nodes and .edges files')
     parser.add_argument('--hcx_dir',
-                        help='Input dir for convert mode with hierarchy in hcx to be converted to HiDeF .nodes '
+                        help='Input directory for convert mode with hierarchy in hcx to be converted to HiDeF .nodes '
                              'and .edges files')
     parser.add_argument('--name',
                         help='Name of this run, needed for FAIRSCAPE. If '
@@ -105,6 +105,9 @@ def _parse_arguments(desc, args):
                              'NDEx publicly visible')
     parser.add_argument('--keep_intermediate_files', action='store_true',
                         help='If set, ppi network cx files will be saved.')
+    parser.add_argument('--gene_node_attributes', nargs="+",
+                        help='Accepts ro-crates that are output of imagedownloader or ppidownloader, '
+                             'or tsv files with gene node attributes')
     parser.add_argument('--skip_logging', action='store_true',
                         help='If set, output.log, error.log '
                              'files will not be created')
@@ -215,6 +218,7 @@ def main(args):
                                          algorithm=theargs.algorithm,
                                          maxres=theargs.maxres,
                                          k=theargs.k,
+                                         gene_node_attributes=theargs.gene_node_attributes,
                                          hiergen=hiergen,
                                          layoutalgo=layoutalgo,
                                          skip_logging=theargs.skip_logging,
