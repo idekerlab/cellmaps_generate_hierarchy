@@ -401,6 +401,14 @@ class CellmapsGenerateHierarchy(object):
                                                        data_dict=data_dict)
 
     def _add_gene_node_attributes(self, parent_ppi):
+        """
+        Adds gene node attributes to the parent PPI network from provided TSV files or found in ro-crates.
+
+        :param parent_ppi: The PPI network to which the attributes will be added.
+        :type parent_ppi: :py:class:`ndex2.cx2.CX2Network`
+        :return: The parent PPI network object with the new attributes added.
+        :rtype: :py:class:`ndex2.cx2.CX2Network`
+        """
         for entry_path in self._gene_node_attributes:
             attr_files = list()
             if os.path.isdir(entry_path):
