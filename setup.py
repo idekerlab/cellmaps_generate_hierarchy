@@ -32,10 +32,10 @@ requirements = ['cellmaps_utils',
                 'tqdm',
                 'pandas',
                 'numpy',
-                'ndex2>=3.5.1',
-                'cdapsutil',
+                'ndex2>=3.5.1,<4.0.0',
+                'cdapsutil>=0.2.2,<1.0.0',
                 'leidenalg==0.9.1',
-                'hidef']
+                'hidef>=1.1.5,<2.0.0']
 
 setup_requirements = []
 
