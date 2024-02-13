@@ -2,7 +2,7 @@
 
 """Top-level package for Cell Maps Generate Hierarchy."""
 
-__author__ = 'Ideker Lab Cell Maps team'
+__author__ = 'Cell Maps team'
 __email__ = 'tools@cm4ai.org'
 __version__ = '0.1.0a16'
 __repo_url__ = 'https://github.com/idekerlab/cellmaps_generate_hierarchy'
