@@ -249,8 +249,14 @@ class CellmapsGenerateHierarchy(object):
 
         description = self._description
         description += ' PPI Network file'
-        keywords = self._keywords
-        keywords.extend(['file'])
+
+        if self._keywords is None or len(self._keywords) == 0:
+            keywords = []
+            keywords.extend(['file'])
+        else:
+            tmpkeywordset = set(self._keywords)
+            tmpkeywordset.add('file')
+            keywords = list(tmpkeywordset)
 
         # register ppi network file with fairscape
         data_dict = {'name': os.path.basename(dest_path) + ' PPI network file',
