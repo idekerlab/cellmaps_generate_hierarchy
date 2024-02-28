@@ -312,19 +312,46 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
         self.assertEqual(res, '1')
         self.assertEqual(('/foo',), prov.register_dataset.call_args.args)
         self.assertEqual('/src/x', prov.register_dataset.call_args.kwargs['source_file'])
-        # TODO: Finish this unit test
-        """
-        prov.register_dataset.assert_called_with('/foo',
-                                                 source_file='/src/x',
-                                                 data_dict={'name': 'x PPI network file',
-                                                            'description': 'description PPI Network file',
-                                                            'keywords': ['1', 'file'],
-                                                            'data-format': 'CX',
-                                                            'author': cellmaps_generate_hierarchy.__name__,
-                                                            'version': cellmaps_generate_hierarchy.__version__,
-                                                            'date-published': 'Y'})
-        """
+        prov.register_dataset.assert_called_once()
+        self.assertEqual(('/foo',), prov.register_dataset.call_args.args)
+        self.assertEqual('/src/x', prov.register_dataset.call_args.kwargs['source_file'])
+        d_dict_passed_in = prov.register_dataset.call_args.kwargs['data_dict']
+        self.assertEqual('x PPI network file', d_dict_passed_in['name'])
+        self.assertEqual('description PPI Network file', d_dict_passed_in['description'])
+        self.assertEqual('CX', d_dict_passed_in['data-format'])
+        self.assertEqual(cellmaps_generate_hierarchy.__name__, d_dict_passed_in['author'])
+        self.assertEqual(cellmaps_generate_hierarchy.__version__, d_dict_passed_in['version'])
+        self.assertEqual('Y', d_dict_passed_in['date-published'])
+        self.assertTrue(2, len(d_dict_passed_in['keywords']))
+        self.assertTrue('1' in d_dict_passed_in['keywords'])
+        self.assertTrue('file' in d_dict_passed_in['keywords'])
 
+    def test_register_ppi_network_keywords_is_none(self):
+        prov = MagicMock()
+        prov.get_default_date_format_str = MagicMock(return_value='Y')
+        ppi_net = MagicMock()
+        ppi_net.get_name = MagicMock(return_value='net_name')
+        prov.register_dataset = MagicMock(return_value='1')
+        gen = CellmapsGenerateHierarchy(outdir='/foo',
+                                        provenance_utils=prov)
+        gen._description = 'description'
+        gen._keywords = None
+        res = gen._register_ppi_network(ppi_net, dest_path='/src/x')
+        self.assertEqual(res, '1')
+        self.assertEqual(('/foo',), prov.register_dataset.call_args.args)
+        self.assertEqual('/src/x', prov.register_dataset.call_args.kwargs['source_file'])
+        prov.register_dataset.assert_called_once()
+        self.assertEqual(('/foo',), prov.register_dataset.call_args.args)
+        self.assertEqual('/src/x', prov.register_dataset.call_args.kwargs['source_file'])
+        d_dict_passed_in = prov.register_dataset.call_args.kwargs['data_dict']
+        self.assertEqual('x PPI network file', d_dict_passed_in['name'])
+        self.assertEqual('description PPI Network file', d_dict_passed_in['description'])
+        self.assertEqual('CX', d_dict_passed_in['data-format'])
+        self.assertEqual(cellmaps_generate_hierarchy.__name__, d_dict_passed_in['author'])
+        self.assertEqual(cellmaps_generate_hierarchy.__version__, d_dict_passed_in['version'])
+        self.assertEqual('Y', d_dict_passed_in['date-published'])
+        self.assertTrue(1, len(d_dict_passed_in['keywords']))
+        self.assertTrue('file' in d_dict_passed_in['keywords'])
 
 
 
