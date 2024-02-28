@@ -136,7 +136,7 @@ class NDExHierarchyUploader(object):
         hierarchy_uuid, hierarchyurl = self._save_network(hierarchy_for_ndex)
         return parent_uuid, parenturl, hierarchy_uuid, hierarchyurl
 
-    def upload_hierary_and_parent_netowrk_from_files(self, outdir):
+    def upload_hierary_and_parent_network_from_files(self, outdir):
         """
         Uploads hierarchy and parent network to NDEx from CX2 files located in a specified directory.
         It first checks the existence of the hierarchy and parent network files, then loads them into

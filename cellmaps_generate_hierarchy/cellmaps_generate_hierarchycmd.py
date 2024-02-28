@@ -173,7 +173,7 @@ def main(args):
         if theargs.mode == 'ndexsave':
             ndex_uploader = NDExHierarchyUploader(theargs.ndexserver, theargs.ndexuser, theargs.ndexpassword,
                                                   theargs.visibility)
-            _, _, _, hierarchyurl = ndex_uploader.upload_hierary_and_parent_netowrk_from_files(theargs.outdir)
+            _, _, _, hierarchyurl = ndex_uploader.upload_hierary_and_parent_network_from_files(theargs.outdir)
             return (f'Hierarchy uploaded. To view hierarchy on Cytoscape on the Web please paste this URL in your '
                     f'browser: {hierarchyurl}')
         if theargs.mode == 'convert':
