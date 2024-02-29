@@ -24,6 +24,7 @@ Overview of Cell Maps Generate Hierarchy
     The generate_hierarchy_overview.png image is from this google doc: https://docs.google.com/drawings/d/1zx4Sv3e1iUNSlN4hixKJbtmVtPMlYv3tfvmgreB7ork/edit
 
 * Free software: MIT license
+* Source code: https://github.com/idekerlab/cellmaps_generate_hierarchy
 
 
 .. toctree::

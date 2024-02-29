@@ -17,6 +17,7 @@ Generates hierarchy from `Cell Maps Coembedding <https://cellmaps-coembedding.re
 
 * Free software: MIT license
 * Documentation: https://cellmaps-generate-hierarchy.readthedocs.io.
+* Source code: https://github.com/idekerlab/cellmaps_generate_hierarchy
 
 Dependencies
 ------------
