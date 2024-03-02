@@ -28,7 +28,6 @@ Dependencies
 * `numpy <https://pypi.org/project/numpy>`__
 * `ndex2 <https://pypi.org/project/ndex2>`__
 * `HiDeF <https://pypi.org/project/hidef>`__
-   **Note:** If running HiDeF in parallel on same machine it must be built directly from `source <https://github.com/fanzheng10/HiDeF>`__
 
 Compatibility
 -------------
