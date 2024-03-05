@@ -36,7 +36,7 @@ class TestCosineSimilarityPPIGenerator(unittest.TestCase):
 
             itr = gen.get_next_network()
             net = next(itr, None)
-            self.assertEqual('cellmaps_generate_hierarchy PPI 1.0 cutoff', net.get_name())
+            self.assertEqual('parent interactome with 1.0 cutoff', net.get_name())
             self.assertEqual(6, len(net.get_edges()))
             self.assertEqual(4, len(net.get_nodes()))
             self.assertIsNone(next(itr, None))
