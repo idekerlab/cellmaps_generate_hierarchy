@@ -450,8 +450,60 @@ class CellmapsGenerateHierarchy(object):
                     for column_name in df.columns[1:]:
                         if not pd.isna(row[column_name]):
                             parent_ppi.add_node_attribute(node_id, column_name, row[column_name])
+                            if column_name == 'represents' and row[column_name].startswith('ensembl:ENSG'):
+                                ensembl_only = re.sub('^ensembl:', '', row[column_name])
+                                # URL suggested by Jan to get HPA info
+                                parent_ppi.add_node_attribute(node_id, 'representsurl',
+                                                              'https://www.proteinatlas.org/' +
+                                                              ensembl_only + '/subcellular')
+
+                                # URL suggested by Jan to get all antibodies for given ensembl id
+                                parent_ppi.add_node_attribute(node_id, 'antibodyurl',
+                                                              'https://www.proteinatlas.org/' +
+                                                              ensembl_only + '/summary/antibody')
+
 
         return parent_ppi
+
+    def _get_network_attribute(self, network=None, attribute_name=None,
+                               default='Unknown'):
+        """
+        Gets network attribute from **network** value matching
+        **attribute_name** or value of **default** if not found
+
+        :param network:
+        :type network: :py:class:`~ndex2.cx2.CX2Network`
+        :param attribute_name:
+        :type attribute_name: str
+        :param default:
+        :type default: str
+        :return:
+        :rtype: str
+        """
+        net_attrs = network.get_network_attributes()
+        if net_attrs is None:
+            logger.info('Network lacks any network attributes. hmm....')
+            return default
+        if attribute_name in net_attrs:
+            return net_attrs[attribute_name]
+        logger.debug(str(attribute_name) + ' network attribute note found. using default')
+        return default
+
+    def _update_ppi_with_hierarchy_attributes(self, parent_ppi=None, hierarchy=None):
+        """
+        Updates parent_ppi aka parent network with some attributes from hierarchy
+        namely **prov:wasGeneratedBy** and **prov:wasDerivedFrom**
+
+        In addition
+        :param hierarchy:
+        :type hierarchy: :py:class:`~ndex2.cx2.CX2Network`
+        """
+        p_net_attrs = parent_ppi.get_network_attributes()
+        p_net_attrs['prov:wasGeneratedBy'] = self._get_network_attribute(hierarchy,
+                                                                         attribute_name='prov:wasGeneratedBy')
+        p_net_attrs['prov:wasDerivedFrom'] = self._get_network_attribute(hierarchy,
+                                                                         attribute_name='prov:wasDerivedFrom')
+        p_net_attrs['name'] = str(hierarchy.get_name() + ' ' + p_net_attrs['name'])
 
     def run(self):
         """
@@ -504,6 +556,9 @@ class CellmapsGenerateHierarchy(object):
 
             parenturl = None
             hierarchyurl = None
+
+            self._update_ppi_with_hierarchy_attributes(parent_ppi=parent_ppi, hierarchy=hierarchy)
+
             if self._server is not None and self._user is not None and self._password is not None:
                 ndex_uploader = NDExHierarchyUploader(self._server, self._user, self._password, self._visibility)
                 _, parenturl, _, hierarchyurl = ndex_uploader.save_hierarchy_and_parent_network(hierarchy, parent_ppi)
