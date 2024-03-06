@@ -142,14 +142,36 @@ class CellmapsGenerateHierarchy(object):
         except KeyError as ke:
             raise CellmapsGenerateHierarchyError('Key missing in provenance: ' + str(ke))
 
+    def _get_keywords_extended_with_new_values(self, new_values=None):
+        """
+        Takes keywords passed into constructor and append **new_values**
+        and return a unique list of merged values
+
+        :param new_values: new values
+        :type new_values: list
+        :return: merged list of keywords
+        :rtype: list
+        """
+        if self._keywords is None or len(self._keywords) == 0:
+            keywords = []
+        else:
+            keywords = self._keywords.copy()
+
+        if isinstance(new_values, list):
+            keywords.extend(new_values)
+        else:
+            keywords.append(new_values)
+
+        return list(set(keywords))
+
     def _register_software(self):
         """
         Registers this tool
 
         :raises CellMapsImageEmbeddingError: If fairscape call fails
         """
-        software_keywords = self._keywords
-        software_keywords.extend(['tools', cellmaps_generate_hierarchy.__name__])
+        software_keywords = self._get_keywords_extended_with_new_values(new_values=['tools',
+                                                                                    cellmaps_generate_hierarchy.__name__])
         software_description = self._description + ' ' + \
                                cellmaps_generate_hierarchy.__description__
         self._softwareid = self._provenance_utils.register_software(self._outdir,
@@ -174,8 +196,7 @@ class CellmapsGenerateHierarchy(object):
         else:
             input_dataset_ids.append(self._provenance_utils.get_id_of_rocrate(self._inputdirs))
 
-        keywords = self._keywords
-        keywords.extend(['computation'])
+        keywords = self._get_keywords_extended_with_new_values(new_values=['computation'])
         description = self._description + ' run of ' + cellmaps_generate_hierarchy.__name__
         self._provenance_utils.register_computation(self._outdir,
                                                     name=cellmaps_generate_hierarchy.__computation_name__,
@@ -250,13 +271,7 @@ class CellmapsGenerateHierarchy(object):
         description = self._description
         description += ' PPI Network file'
 
-        if self._keywords is None or len(self._keywords) == 0:
-            keywords = []
-            keywords.extend(['file'])
-        else:
-            tmpkeywordset = set(self._keywords)
-            tmpkeywordset.add('file')
-            keywords = list(tmpkeywordset)
+        keywords = self._get_keywords_extended_with_new_values(new_values=['file'])
 
         # register ppi network file with fairscape
         data_dict = {'name': os.path.basename(dest_path) + ' PPI network file',
@@ -270,52 +285,14 @@ class CellmapsGenerateHierarchy(object):
                                                        source_file=dest_path,
                                                        data_dict=data_dict)
 
-    def _write_and_register_ppi_network_as_edgelist(self, ppi_network, dest_path=None):
-        """
-        Writes out **ppi_network** passed in as edge list file
-
-        :param ppi_network:
-        :type ppi_network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
-        :return: (dataset id, path to output file)
-        :rtype: tuple
-        """
-        logger.debug('Writing PPI network ' + str(ppi_network.get_name()))
-
-        # build dict of node ids to gene names
-        name_dict = {}
-        for node_id, node_obj in ppi_network.get_nodes():
-            name_dict[node_id] = node_obj['n']
-
-        # write PPI to filesystem
-        with open(dest_path, 'w') as f:
-            for edge_id, edge_obj in ppi_network.get_edges():
-                # todo get weight
-                f.write(name_dict[edge_obj['s']] + '\t' + str(name_dict[edge_obj['t']]) + '\n')
-
-        description = self._description
-        description += ' PPI Edgelist file'
-        keywords = self._keywords
-        keywords.extend(['file'])
-
-        # register ppi network file with fairscape
-        data_dict = {'name': os.path.basename(dest_path) + ' PPI edgelist file',
-                     'description': description,
-                     'keywords': keywords,
-                     'data-format': 'tsv',
-                     'author': cellmaps_generate_hierarchy.__name__,
-                     'version': cellmaps_generate_hierarchy.__version__,
-                     'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
-        dataset_id = self._provenance_utils.register_dataset(self._outdir,
-                                                             source_file=dest_path,
-                                                             data_dict=data_dict)
-        return dataset_id
-
     def _write_hierarchy_network(self, hierarchy=None):
         """
+        Writes **hierarchy** to file
 
-        :param hierarchy:
+        :param hierarchy: CX2 network converted to list and dicts
         :type hierarchy: list
-        :return:
+        :return: Path to hierarchy output file
+        :rtype: str
         """
         logger.debug('Writing hierarchy')
         suffix = '.cx2'  # todo put this into cellmaps_utils.constants
@@ -335,8 +312,10 @@ class CellmapsGenerateHierarchy(object):
 
         description = self._description
         description += ' Hierarchy network file'
-        keywords = self._keywords
-        keywords.extend(['file', 'hierarchy', 'network', 'HCX'])
+        keywords = self._get_keywords_extended_with_new_values(new_values=['file',
+                                                                           'hierarchy',
+                                                                           'network',
+                                                                           'HCX'])
         # register hierarchy network file with fairscape
         # The name must be Output Dataset so that the cm4ai portal knows to
         # grab the URL link
@@ -367,8 +346,12 @@ class CellmapsGenerateHierarchy(object):
             json.dump(parent, f)
         description = self._description
         description += ' Hierarchy parent network file'
-        keywords = self._keywords
-        keywords.extend(['file', 'parent', 'interactome', 'ppi', 'network', 'CX2'])
+        keywords = self._get_keywords_extended_with_new_values(new_values=['file',
+                                                                           'parent',
+                                                                           'interactome',
+                                                                           'ppi',
+                                                                           'network',
+                                                                           'CX2'])
 
         data_dict = {'name': 'Hierarchy parent network',
                      'description': description,
@@ -391,8 +374,8 @@ class CellmapsGenerateHierarchy(object):
 
         description = self._description
         description += f' HiDeF output {hidef_output_name} with gene names file'
-        keywords = self._keywords
-        keywords.extend(['file'])
+
+        keywords = self._get_keywords_extended_with_new_values(new_values=['file'])
 
         # register file with fairscape
         data_dict = {'name': f'HiDeF output {hidef_output_name} with gene names',
@@ -461,8 +444,6 @@ class CellmapsGenerateHierarchy(object):
                                 parent_ppi.add_node_attribute(node_id, 'antibodyurl',
                                                               'https://www.proteinatlas.org/' +
                                                               ensembl_only + '/summary/antibody')
-
-
         return parent_ppi
 
     def _get_network_attribute(self, network=None, attribute_name=None,
