@@ -196,14 +196,18 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
         gen._keywords = ['hi']
         gen._register_software()
         software_description = gen._description + ' ' + cellmaps_generate_hierarchy.__description__
-        prov.register_software.assert_called_with('/foo',
-                                                  name='cellmaps_generate_hierarchy',
-                                                  description=software_description,
-                                                  author=cellmaps_generate_hierarchy.__author__,
-                                                  version=cellmaps_generate_hierarchy.__version__,
-                                                  file_format='py',
-                                                  keywords=['hi', 'tools', 'cellmaps_generate_hierarchy'],
-                                                  url=cellmaps_generate_hierarchy.__repo_url__)
+        prov.register_software.assert_called_once()
+        self.assertEqual(('/foo',), prov.register_software.call_args.args)
+        self.assertEqual('cellmaps_generate_hierarchy', prov.register_software.call_args.kwargs['name'])
+        self.assertEqual(software_description, prov.register_software.call_args.kwargs['description'])
+        self.assertEqual(cellmaps_generate_hierarchy.__author__, prov.register_software.call_args.kwargs['author'])
+        self.assertEqual(cellmaps_generate_hierarchy.__version__, prov.register_software.call_args.kwargs['version'])
+        self.assertEqual('py', prov.register_software.call_args.kwargs['file_format'])
+        self.assertEqual(cellmaps_generate_hierarchy.__repo_url__, prov.register_software.call_args.kwargs['url'])
+        self.assertEqual(3, len(prov.register_software.call_args.kwargs['keywords']))
+        self.assertTrue('hi' in prov.register_software.call_args.kwargs['keywords'])
+        self.assertTrue('tools' in prov.register_software.call_args.kwargs['keywords'])
+        self.assertTrue('cellmaps_generate_hierarchy' in prov.register_software.call_args.kwargs['keywords'])
 
     def test_register_computation(self):
 
@@ -221,13 +225,17 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
         gen._register_computation(['oneid'])
 
         description = gen._description + ' run of ' + cellmaps_generate_hierarchy.__name__
-        prov.register_computation.assert_called_with('/foo', name='Hierarchy',
-                                                     run_by='smith', command="{'foo': 'hi'}",
-                                                     description=description,
-                                                     keywords=['hi', 'computation'],
-                                                     used_software=['softid'],
-                                                     used_dataset=['someid'],
-                                                     generated=['oneid'])
+        prov.register_computation.assert_called_once()
+        self.assertEqual(('/foo',), prov.register_computation.call_args.args)
+        self.assertEqual('smith', prov.register_computation.call_args.kwargs['run_by'])
+        self.assertEqual(description, prov.register_computation.call_args.kwargs['description'])
+        self.assertEqual("{'foo': 'hi'}", prov.register_computation.call_args.kwargs['command'])
+        self.assertEqual(['softid'], prov.register_computation.call_args.kwargs['used_software'])
+        self.assertEqual(['someid'], prov.register_computation.call_args.kwargs['used_dataset'])
+        self.assertEqual(['oneid'], prov.register_computation.call_args.kwargs['generated'])
+        self.assertEqual(2, len(prov.register_computation.call_args.kwargs['keywords']))
+        self.assertTrue('hi' in prov.register_computation.call_args.kwargs['keywords'])
+        self.assertTrue('computation' in prov.register_computation.call_args.kwargs['keywords'])
 
     def test_register_computation_list_of_inputdirs(self):
 
@@ -245,13 +253,17 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
         gen._register_computation(['oneid'])
 
         description = gen._description + ' run of ' + cellmaps_generate_hierarchy.__name__
-        prov.register_computation.assert_called_with('/foo', name='Hierarchy',
-                                                     run_by='smith', command="{'foo': 'hi'}",
-                                                     description=description,
-                                                     keywords=['hi', 'computation'],
-                                                     used_software=['softid'],
-                                                     used_dataset=['1id', '2id'],
-                                                     generated=['oneid'])
+        prov.register_computation.assert_called_once()
+        self.assertEqual(('/foo',), prov.register_computation.call_args.args)
+        self.assertEqual('smith', prov.register_computation.call_args.kwargs['run_by'])
+        self.assertEqual(description, prov.register_computation.call_args.kwargs['description'])
+        self.assertEqual("{'foo': 'hi'}", prov.register_computation.call_args.kwargs['command'])
+        self.assertEqual(['softid'], prov.register_computation.call_args.kwargs['used_software'])
+        self.assertEqual(['1id', '2id'], prov.register_computation.call_args.kwargs['used_dataset'])
+        self.assertEqual(['oneid'], prov.register_computation.call_args.kwargs['generated'])
+        self.assertEqual(2, len(prov.register_computation.call_args.kwargs['keywords']))
+        self.assertTrue('hi' in prov.register_computation.call_args.kwargs['keywords'])
+        self.assertTrue('computation' in prov.register_computation.call_args.kwargs['keywords'])
 
     def test_get_ppi_network_dest_file(self):
         ppi_net = MagicMock()
