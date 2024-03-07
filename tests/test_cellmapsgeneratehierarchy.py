@@ -8,7 +8,7 @@ import shutil
 import tempfile
 import json
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, ANY
 
 from cellmaps_utils.exceptions import CellMapsProvenanceError
 from ndex2.cx2 import CX2Network
@@ -252,10 +252,15 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
         prov.register_computation.assert_called_with('/foo', name='Hierarchy',
                                                      run_by='smith', command="{'foo': 'hi'}",
                                                      description=description,
-                                                     keywords=['hi', 'computation'],
+                                                     keywords=ANY,
                                                      used_software=['softid'],
                                                      used_dataset=['someid'],
                                                      generated=['oneid'])
+        actual_call = prov.register_computation.call_args
+        actual_keywords = actual_call[1]['keywords']
+        expected_options = [['hi', 'computation'], ['computation', 'hi']]
+        self.assertTrue(any(set(actual_keywords) == set(expected) for expected in expected_options),
+                        f"{actual_keywords} does not match any of the expected configurations: {expected_options}")
 
     def test_register_computation_list_of_inputdirs(self):
 
