@@ -87,10 +87,8 @@ class NDExHierarchyUploader(object):
                     raise CellmapsGenerateHierarchyError('Expected a str, but got this: ' + str(res))
 
                 ndexuuid = res[res.rfind('/') + 1:]
-                network_url = (f"https://{self._server.replace('https://', '').replace('http://', '')}"
-                               f"/cytoscape/0/networks/{ndexuuid}")
 
-                return ndexuuid, network_url
+                return ndexuuid, res.replace('v3', 'viewer')
             except RequestException as re:
                 if retry_num == max_retries:
                     raise CellmapsGenerateHierarchyError(str(max_retries) + 'attempts to save the network failed.')
@@ -99,6 +97,20 @@ class NDExHierarchyUploader(object):
                 time.sleep(retry_wait)
             except Exception as e:
                 raise CellmapsGenerateHierarchyError('An error occurred while saving the network to NDEx: ' + str(e))
+
+    def get_cytoscape_url(self, ndexurl):
+        """
+        Generates a Cytoscape URL for a given NDEx network URL.
+
+        :param ndexurl: The URL of the NDEx network.
+        :type ndexurl: str
+        :return: The URL pointing to the network's view on the Cytoscape platform.
+        :rtype: str
+        """
+        ndexuuid = ndexurl[ndexurl.rfind('/') + 1:]
+        network_url = (f"https://{self._server.replace('https://', '').replace('http://', '')}"
+                       f"/cytoscape/0/networks/{ndexuuid}")
+        return network_url
 
     def _update_hcx_annotations(self, hierarchy, interactome_id):
         """

@@ -543,6 +543,11 @@ class CellmapsGenerateHierarchy(object):
             if self._server is not None and self._user is not None and self._password is not None:
                 ndex_uploader = NDExHierarchyUploader(self._server, self._user, self._password, self._visibility)
                 _, parenturl, _, hierarchyurl = ndex_uploader.save_hierarchy_and_parent_network(hierarchy, parent_ppi)
+                message = (f'Hierarchy uploaded. To view hierarchy on NDEx please paste this URL in your browser '
+                           f'{hierarchyurl}. To view Hierarchy on new experimental Cytoscape on the Web, '
+                           f'go to {ndex_uploader.get_cytoscape_url(hierarchyurl)}')
+                print(message)
+                logger.info(message)
 
             hierarchy = hierarchy.to_cx2()
             parent_ppi = parent_ppi.to_cx2()

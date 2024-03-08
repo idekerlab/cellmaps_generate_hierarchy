@@ -93,7 +93,7 @@ def _parse_arguments(desc, args):
                         help='PPI network cutoff to be chosen as hierarchy parent network.')
     parser.add_argument('--skip_layout', action='store_true',
                         help='If set, skips layout of hierarchy step')
-    parser.add_argument('--ndexserver', default='idekerlab.ndexbio.org',
+    parser.add_argument('--ndexserver', default='public.ndexbio.org',
                         help='Server where hierarchy can be converted to HCX and saved')
     parser.add_argument('--ndexuser',
                         help='NDEx user account')
@@ -174,8 +174,10 @@ def main(args):
             ndex_uploader = NDExHierarchyUploader(theargs.ndexserver, theargs.ndexuser, theargs.ndexpassword,
                                                   theargs.visibility)
             _, _, _, hierarchyurl = ndex_uploader.upload_hierary_and_parent_network_from_files(theargs.outdir)
-            return (f'Hierarchy uploaded. To view hierarchy on Cytoscape on the Web please paste this URL in your '
-                    f'browser: {hierarchyurl}')
+            print(f'Hierarchy uploaded. To view hierarchy on NDEx please paste this URL in your '
+                  f'browser {hierarchyurl}. To view Hierarchy on new experimental Cytoscape on the Web, go to '
+                  f'{ndex_uploader.get_cytoscape_url(hierarchyurl)}')
+            return 0
         if theargs.mode == 'convert':
             hcx_dir = theargs.hcx_dir if theargs.hcx_dir else theargs.outdir
             hidef_converter = HierarchyToHiDeFConverter(hcx_dir, theargs.outdir)
