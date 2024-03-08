@@ -145,6 +145,8 @@ To generate hierarchy, use embeddings or co-embeddings, in the format specified 
 Uploading hierarchy to NDEx
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+To upload network to NDEx, NDEx account is necessary. See `here  <https://home.ndexbio.org/create-an-ndex-account/>`__ on how to create account on NDEx.
+
 With command line:
 
 .. code-block:: bash
