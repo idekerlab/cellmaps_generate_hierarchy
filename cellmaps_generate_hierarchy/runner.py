@@ -406,7 +406,7 @@ class CellmapsGenerateHierarchy(object):
             attr_files = list()
             if os.path.isdir(entry_path):
                 attr_files.extend([os.path.join(entry_path, f) for f in os.listdir(entry_path)
-                                    if re.match(r'\d+_' + re.escape(constants.IMAGE_GENE_NODE_ATTR_FILE), f)])
+                                   if re.match(r'\d+_' + re.escape(constants.IMAGE_GENE_NODE_ATTR_FILE), f)])
 
                 ppi_attr_file = os.path.join(entry_path, constants.PPI_GENE_NODE_ATTR_FILE)
                 if os.path.exists(ppi_attr_file):
@@ -479,12 +479,12 @@ class CellmapsGenerateHierarchy(object):
         :param hierarchy:
         :type hierarchy: :py:class:`~ndex2.cx2.CX2Network`
         """
+        parent_ppi.add_network_attribute('prov:wasGeneratedBy',
+                                         self._get_network_attribute(hierarchy, attribute_name='prov:wasGeneratedBy'))
+        parent_ppi.add_network_attribute('prov:wasDerivedFrom',
+                                         self._get_network_attribute(hierarchy, attribute_name='prov:wasDerivedFrom'))
         p_net_attrs = parent_ppi.get_network_attributes()
-        p_net_attrs['prov:wasGeneratedBy'] = self._get_network_attribute(hierarchy,
-                                                                         attribute_name='prov:wasGeneratedBy')
-        p_net_attrs['prov:wasDerivedFrom'] = self._get_network_attribute(hierarchy,
-                                                                         attribute_name='prov:wasDerivedFrom')
-        p_net_attrs['name'] = str(hierarchy.get_name() + ' ' + p_net_attrs['name'])
+        parent_ppi.add_network_attribute('name', str(hierarchy.get_name() + ' ' + p_net_attrs['name']))
 
     def run(self):
         """
