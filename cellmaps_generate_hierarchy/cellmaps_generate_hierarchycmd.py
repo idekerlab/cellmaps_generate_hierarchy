@@ -93,7 +93,7 @@ def _parse_arguments(desc, args):
                         help='PPI network cutoff to be chosen as hierarchy parent network.')
     parser.add_argument('--skip_layout', action='store_true',
                         help='If set, skips layout of hierarchy step')
-    parser.add_argument('--ndexserver', default='public.ndexbio.org',
+    parser.add_argument('--ndexserver', default='ndexbio.org',
                         help='Server where hierarchy can be converted to HCX and saved')
     parser.add_argument('--ndexuser',
                         help='NDEx user account')
