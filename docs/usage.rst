@@ -142,6 +142,12 @@ To generate hierarchy, use embeddings or co-embeddings, in the format specified 
 
   cellmaps_generate_hierarchycmd.py ./cellmaps_generate_hierarchy_outdir --coembedding_dirs ./cellmaps_coembedding_outdir -vvvv
 
+To generate hierarchy with a **custom name** use ``--name`` flag.
+
+.. code-block::
+
+  cellmaps_generate_hierarchycmd.py ./cellmaps_generate_hierarchy_outdir --coembedding_dirs ./cellmaps_coembedding_outdir --name my_hierarchy -vvvv
+
 Uploading hierarchy to NDEx
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
