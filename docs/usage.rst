@@ -171,7 +171,9 @@ Programmatically:
     from cellmaps_generate_hierarchy.ndexupload import NDExHierarchyUploader
 
     #Specify NDEx server
-    ndexserver = 'idekerlab.ndexbio.org'
+    ndexserver = 'idekerlab.ndexbio.org''
+    ndexuser = '<USER>'
+    ndexpassword = '<PASSWORD>'
 
     # Specify paths to hierarchy and its parent (you can find example files in examples directory in cellmaps_generate_hierarchy_repo)
     hierarchy_path = './examples/hierarchy.cx2'
@@ -183,16 +185,16 @@ Programmatically:
     parent_network = factory.get_cx2network(parent_network_path)
 
     # Initialize NDExHierarchyUploader with the specified NDEx server and credentials
-    uploader = NDExHierarchyUploader(ndexserver, ndexuser, ndexpassword)
+    uploader = NDExHierarchyUploader(ndexserver, ndexuser, ndexpassword, visibility=True)
 
     # Upload the hierarchy and parent network to NDEx
     parent_uuid, parenturl, hierarchy_uuid, hierarchyurl = uploader.save_hierarchy_and_parent_network(hierarchy_network, parent_network)
 
-    print(f"Parent network UUID is {parent_uuid} and its URL in NDEx is {parenturl})
-    print(f"Hierarchy network UUID is {hierarchy_uuid} and its URL in NDEx is {hierarchyurl})
+    print(f"Parent network UUID is {parent_uuid} and its URL in NDEx is {parenturl}")
+    print(f"Hierarchy network UUID is {hierarchy_uuid} and its URL in NDEx is {hierarchyurl}")
 
     # Another option is to just specify the directory where the files are placed
-    _, _, _, hierarchyurl = ndex_uploader.upload_hierary_and_parent_network_from_files('./examples/')
+    _, _, _, hierarchyurl = uploader.upload_hierary_and_parent_network_from_files('./examples/')
     print(f'Hierarchy uploaded. To view the hierarchy, paste this URL in your browser: {hierarchyurl}')
 
 Convert hierarchy to HiDeF
