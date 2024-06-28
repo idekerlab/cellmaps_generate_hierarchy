@@ -11,7 +11,7 @@ from cellmaps_utils import constants
 from cellmaps_utils.provenance import ProvenanceUtil
 import cellmaps_generate_hierarchy
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
-from cellmaps_generate_hierarchy.hidefconverter import HierarchyToHiDeFConverter
+from cellmaps_utils.hidefconverter import HierarchyToHiDeFConverter
 from cellmaps_generate_hierarchy.ndexupload import NDExHierarchyUploader
 from cellmaps_generate_hierarchy.ppi import CosineSimilarityPPIGenerator
 from cellmaps_generate_hierarchy.hierarchy import CDAPSHiDeFHierarchyGenerator
