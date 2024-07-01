@@ -70,4 +70,4 @@ class NDExHierarchyUploader(object):
         :raises CellmapsGenerateHierarchyError: If the required hierarchy or parent network files do not exist
                                                 in the directory.
         """
-        return self._ndex_uploader.upload_hierary_and_parent_network_from_files(outdir)
+        return self._ndex_uploader.upload_hierarchy_and_parent_network_from_files(outdir)

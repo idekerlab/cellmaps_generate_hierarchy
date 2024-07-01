@@ -12,7 +12,7 @@ from cellmaps_utils.provenance import ProvenanceUtil
 import cellmaps_generate_hierarchy
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
 from cellmaps_utils.hidefconverter import HierarchyToHiDeFConverter
-from cellmaps_generate_hierarchy.ndexupload import NDExHierarchyUploader
+from cellmaps_utils.ndexupload import NDExHierarchyUploader
 from cellmaps_generate_hierarchy.ppi import CosineSimilarityPPIGenerator
 from cellmaps_generate_hierarchy.hierarchy import CDAPSHiDeFHierarchyGenerator
 from cellmaps_generate_hierarchy.maturehierarchy import HiDeFHierarchyRefiner
@@ -173,7 +173,7 @@ def main(args):
         if theargs.mode == 'ndexsave':
             ndex_uploader = NDExHierarchyUploader(theargs.ndexserver, theargs.ndexuser, theargs.ndexpassword,
                                                   theargs.visibility)
-            _, _, _, hierarchyurl = ndex_uploader.upload_hierary_and_parent_network_from_files(theargs.outdir)
+            _, _, _, hierarchyurl = ndex_uploader.upload_hierarchy_and_parent_network_from_files(theargs.outdir)
             print(f'Hierarchy uploaded. To view hierarchy on NDEx please paste this URL in your '
                   f'browser {hierarchyurl}. To view Hierarchy on new experimental Cytoscape on the Web, go to '
                   f'{ndex_uploader.get_cytoscape_url(hierarchyurl)}')

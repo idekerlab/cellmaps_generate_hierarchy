@@ -17,7 +17,7 @@ from cellmaps_utils.provenance import ProvenanceUtil
 import cellmaps_generate_hierarchy
 from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyError
 from cellmaps_utils.hidefconverter import HierarchyToHiDeFConverter
-from cellmaps_generate_hierarchy.ndexupload import NDExHierarchyUploader
+from cellmaps_utils.ndexupload import NDExHierarchyUploader
 
 logger = logging.getLogger(__name__)
 
