@@ -12,11 +12,11 @@ These files represent the final interactome and hierarchy in CX2_ format:
 - ``hierarchy.cx2``:
     The main output file containing the generated hierarchy in HCX_ format.
 
-.. code-block:: json
+.. code-block::
 
     [
       {
-        "CXVersion": "1.0",
+        "CXVersion": "2.0",
         "hasFragments": false
       },
       {
@@ -117,7 +117,7 @@ These files represent the final interactome and hierarchy in CX2_ format:
 - ``hierarchy_parent.cx2``:
     The parent or primary network used as a reference for generating the hierarchy in CX2_ format.
 
-.. code-block:: json
+.. code-block::
 
     [
         {
@@ -186,7 +186,7 @@ Other Outputs
     A JSON file containing information about the CDAPS_ analysis. It contains the community detection results and node attributes as CX2_.
     More information about the community detection format v2 can be found `here <https://github.com/cytoscape/communitydetection-rest-server/wiki/COMMUNITYDETECTRESULTV2-format>`__
 
-.. code-block:: json
+.. code-block::
 
     {
       "communityDetectionResult": "23,4,c-m;23,1,c-m;23,6,c-m;23,10,c-m;23,22,c-m;23,19,c-m;23,17,c-m;23,20,c-m;23,13,c-m;23,14,c-m;23,11,c-m;23,7,c-m;23,5,c-m;23,18,c-m;23,21,c-m;23,8,c-m;23,12,c-m;23,15,c-m;23,3,c-m;23,0,c-m;23,9,c-m;23,16,c-m;23,2,c-m;24,4,c-m;24,1,c-m;24,6,c-m;24,10,c-m;24,0,c-m;24,20,c-m;24,5,c-m;25,1,c-m;25,6,c-m;25,10,c-m;25,0,c-m;25,20,c-m;26,18,c-m;26,19,c-m;26,17,c-m;26,12,c-m;26,13,c-m;27,8,c-m;27,14,c-m;27,7,c-m;27,11,c-m;28,21,c-m;28,9,c-m;28,2,c-m;28,3,c-m;23,24,c-c;23,26,c-c;23,28,c-c;23,27,c-c;24,25,c-c;",
