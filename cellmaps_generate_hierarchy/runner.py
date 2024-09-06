@@ -47,7 +47,8 @@ class CellmapsGenerateHierarchy(object):
                  ndexuser=None,
                  ndexpassword=None,
                  visibility=None,
-                 keep_intermediate_files=False
+                 keep_intermediate_files=False,
+                 provenance=None
                  ):
         """
         Constructor
@@ -103,24 +104,45 @@ class CellmapsGenerateHierarchy(object):
         self._password = ndexpassword
         self._visibility = visibility
         self.keep_intermediate_files = keep_intermediate_files
+        self._provenance = provenance
 
     def _update_provenance_fields(self):
         """
 
         :return:
         """
+        rocrate_dirs = []
+        if self._inputdirs is not None:
+            for embeddind_dir in self._inputdirs:
+                if os.path.exists(os.path.join(embeddind_dir, constants.RO_CRATE_METADATA_FILE)):
+                    rocrate_dirs.append(embeddind_dir)
+        if len(rocrate_dirs) > 0:
+            prov_attrs = self._provenance_utils.get_merged_rocrate_provenance_attrs(self._inputdirs,
+                                                                                    override_name=self._name,
+                                                                                    override_project_name=
+                                                                                    self._project_name,
+                                                                                    override_organization_name=
+                                                                                    self._organization_name,
+                                                                                    extra_keywords=['hierarchy',
+                                                                                                    'model'])
 
-        prov_attrs = self._provenance_utils.get_merged_rocrate_provenance_attrs(self._inputdirs,
-                                                                                override_name=self._name,
-                                                                                override_project_name=self._project_name,
-                                                                                override_organization_name=self._organization_name,
-                                                                                extra_keywords=['hierarchy', 'model'])
-
-        self._name = prov_attrs.get_name()
-        self._organization_name = prov_attrs.get_organization_name()
-        self._project_name = prov_attrs.get_project_name()
-        self._keywords = prov_attrs.get_keywords()
-        self._description = prov_attrs.get_description()
+            self._name = prov_attrs.get_name()
+            self._organization_name = prov_attrs.get_organization_name()
+            self._project_name = prov_attrs.get_project_name()
+            self._keywords = prov_attrs.get_keywords()
+            self._description = prov_attrs.get_description()
+        elif self._provenance is not None:
+            self._name = self._provenance['name'] if 'name' in self._provenance else 'Hierarchy'
+            self._organization_name = self._provenance['organization-name'] \
+                if 'organization-name' in self._provenance else 'NA'
+            self._project_name = self._provenance['project-name']\
+                if 'project-name' in self._provenance else 'NA'
+            self._keywords = self._provenance['keywords'] if 'keywords' in self._provenance else ['hierarchy', 'model']
+            self._description = self._provenance['description'] if 'description' in self._provenance else \
+                'Hierarchy generation'
+        else:
+            raise CellmapsGenerateHierarchyError('One of inputs directories should be an RO-Crate or provenance file '
+                                                 'should be specified.')
 
     def _create_rocrate(self):
         """

@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 import argparse
+import json
 import sys
 import logging
 import logging.config
@@ -52,18 +53,23 @@ def _parse_arguments(desc, args):
     parser.add_argument('--hcx_dir',
                         help='Input directory for convert mode with hierarchy in hcx to be converted to HiDeF .nodes '
                              'and .edges files')
+    parser.add_argument('--provenance',
+                        help='Path to file containing provenance '
+                             'information about input files in JSON format. '
+                             'This is required if inputdir does not contain '
+                             'ro-crate-metadata.json file.')
     parser.add_argument('--name',
                         help='Name of this run, needed for FAIRSCAPE. If '
                              'unset, name value from specified '
-                             'by --coembedding_dir directory will be used')
+                             'by --coembedding_dir directory or provenance file will be used')
     parser.add_argument('--organization_name',
                         help='Name of organization running this tool, needed '
                              'for FAIRSCAPE. If unset, organization name specified '
-                             'in --coembedding_dir directory will be used')
+                             'in --coembedding_dir directory or provenance file will be used')
     parser.add_argument('--project_name',
                         help='Name of project running this tool, needed for '
                              'FAIRSCAPE. If unset, project name specified '
-                             'in --coembedding_dir directory will be used')
+                             'in --coembedding_dir directory or provenance file will be used')
     parser.add_argument('--k', default=10,
                         help='HiDeF stability parameter')
     parser.add_argument('--algorithm', default='leiden',
@@ -166,6 +172,12 @@ def main(args):
     theargs.program = args[0]
     theargs.version = cellmaps_generate_hierarchy.__version__
 
+    if theargs.provenance is not None:
+        with open(theargs.provenance, 'r') as f:
+            json_prov = json.load(f)
+    else:
+        json_prov = None
+
     try:
         logutils.setup_cmd_logging(theargs)
         if theargs.ndexpassword == '-':
@@ -233,7 +245,8 @@ def main(args):
                                          ndexuser=theargs.ndexuser,
                                          ndexpassword=theargs.ndexpassword,
                                          visibility=theargs.visibility,
-                                         keep_intermediate_files=theargs.keep_intermediate_files
+                                         keep_intermediate_files=theargs.keep_intermediate_files,
+                                         provenance=json_prov
                                          ).run()
     except Exception as e:
         logger.exception('Caught exception: ' + str(e))
