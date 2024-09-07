@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import sys
 import logging
 import logging.config
@@ -191,8 +192,10 @@ def main(args):
                   f'{ndex_uploader.get_cytoscape_url(hierarchyurl)}')
             return 0
         if theargs.mode == 'convert':
-            hcx_dir = theargs.hcx_dir if theargs.hcx_dir else theargs.outdir
-            hidef_converter = HierarchyToHiDeFConverter(hcx_dir, theargs.outdir)
+            hcx_dir = theargs.hcx_dir if theargs.hcx_dir is not None else theargs.outdir
+            if not os.path.isdir(theargs.outdir):
+                os.makedirs(theargs.outdir, mode=0o755)
+            hidef_converter = HierarchyToHiDeFConverter(theargs.outdir, input_dir=hcx_dir)
             return hidef_converter.generate_hidef_files()
 
         if theargs.coembedding_dirs is None:
