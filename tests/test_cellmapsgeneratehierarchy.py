@@ -55,10 +55,10 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
             myobj = CellmapsGenerateHierarchy(outdir=run_dir)
             try:
                 myobj.run()
-                self.fail('Expected CellMapsProvenanceError')
-            except CellMapsProvenanceError as e:
+                self.fail('Expected CellmapsGenerateHierarchyError')
+            except CellmapsGenerateHierarchyError as e:
                 print(e)
-                self.assertTrue('rocrates' in str(e))
+                self.assertTrue('RO-Crate' in str(e))
 
             self.assertFalse(os.path.isfile(os.path.join(run_dir, 'output.log')))
             self.assertFalse(os.path.isfile(os.path.join(run_dir, 'error.log')))
@@ -75,9 +75,9 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
                                               skip_logging=False)
             try:
                 myobj.run()
-                self.fail('Expected CellMapsProvenanceError')
-            except CellMapsProvenanceError as e:
-                self.assertTrue('rocrates' in str(e))
+                self.fail('Expected CellmapsGenerateHierarchyError')
+            except CellmapsGenerateHierarchyError as e:
+                self.assertTrue('RO-Crate' in str(e))
 
             self.assertTrue(os.path.isfile(os.path.join(run_dir, 'output.log')))
             self.assertTrue(os.path.isfile(os.path.join(run_dir, 'error.log')))
@@ -127,11 +127,15 @@ class TestCellmapsgeneratehierarchyrunner(unittest.TestCase):
         prov.get_merged_rocrate_provenance_attrs = MagicMock()
         gen = CellmapsGenerateHierarchy(outdir='/foo', inputdirs=['/crate1'],
                                         provenance_utils=prov)
-        gen._update_provenance_fields()
-        prov.get_merged_rocrate_provenance_attrs.assert_called_with(['/crate1'], override_name=None,
-                                                                    override_project_name=None,
-                                                                    override_organization_name=None,
-                                                                    extra_keywords=['hierarchy', 'model'])
+        try:
+            gen._update_provenance_fields()
+            prov.get_merged_rocrate_provenance_attrs.assert_called_with(['/crate1'], override_name=None,
+                                                                        override_project_name=None,
+                                                                        override_organization_name=None,
+                                                                        extra_keywords=['hierarchy', 'model'])
+            self.fail('expected exception')
+        except CellmapsGenerateHierarchyError as e:
+            self.assertTrue('RO-Crate' in str(e))
 
     def test_register_software(self):
 
