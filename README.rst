@@ -45,7 +45,7 @@ Installation
    pip install dist/cellmaps_generate_hierarchy*whl
 
 
-Run **make** command with no arguments to see other build/deploy options including creation of Docker image 
+Run **make** command with no arguments to see other build/deploy options including creation of Docker image
 
 .. code-block::
 
@@ -72,6 +72,8 @@ Output:
    dockerbuild          build docker image and store in local repository
    dockerpush           push image to dockerhub
 
+Before running tests, please install: ``pip install -r requirements_dev.txt``.
+
 For developers
 -------------------------------------------
 
@@ -97,7 +99,7 @@ against those changes.
 Needed files
 ------------
 
-The output directory for co-embedding is required (see `Cell Maps Coembedding <https://github.com/idekerlab/cellmaps_coembedding/>`__). 
+The output directory for co-embedding is required (see `Cell Maps Coembedding <https://github.com/idekerlab/cellmaps_coembedding/>`__).
 
 Usage
 -----
@@ -108,7 +110,7 @@ For information invoke :code:`cellmaps_generate_hierarchycmd.py -h`
 
 .. code-block::
 
-   cellmaps_generate_hierarchycmd.py ./cellmaps_generate_hierarchy --coembedding_dirs ./cellmaps_coembedding_outdir 
+   cellmaps_generate_hierarchycmd.py ./cellmaps_generate_hierarchy --coembedding_dirs ./cellmaps_coembedding_outdir
 
 Via Docker
 ~~~~~~~~~~~~~~~~~~~~~~

@@ -39,8 +39,6 @@ requirements = ['cellmaps_utils',
 
 setup_requirements = []
 
-test_requirements = ['requests_mock']
-
 setup(
     author=author,
     author_email=email,
@@ -66,9 +64,6 @@ setup(
     package_dir={'cellmaps_generate_hierarchy': 'cellmaps_generate_hierarchy'},
     package_data={'cellmaps_generate_hierarchy': ['interactome_style.cx2', 'hierarchy_style.cx2']},
     scripts=['cellmaps_generate_hierarchy/cellmaps_generate_hierarchycmd.py'],
-    setup_requires=setup_requirements,
-    test_suite='tests',
-    tests_require=test_requirements,
     url=repo_url,
     version=version,
     zip_safe=False)
