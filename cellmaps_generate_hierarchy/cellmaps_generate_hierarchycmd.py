@@ -98,6 +98,8 @@ def _parse_arguments(desc, args):
                              'another PPI network')
     parser.add_argument('--hierarchy_parent_cutoff', default=0.1,
                         help='PPI network cutoff to be chosen as hierarchy parent network.')
+    parser.add_argument('--bootstrap_edges', type=validate_percentage, default=0,
+                        help='Percentage of edges that will be removed randomly for bootstrapping, up to 50%.')
     parser.add_argument('--skip_layout', action='store_true',
                         help='If set, skips layout of hierarchy step')
     parser.add_argument('--ndexserver', default='ndexbio.org',
@@ -136,6 +138,14 @@ def _parse_arguments(desc, args):
                                  cellmaps_generate_hierarchy.__version__))
 
     return parser.parse_args(args)
+
+
+def validate_percentage(value):
+    f_value = float(value)
+    if f_value < 0 or f_value > 50:
+        raise argparse.ArgumentTypeError(f"{value} is an invalid percentage value for --bootstrap_edges parameter. "
+                                         f"Must be between 0 and 50")
+    return f_value
 
 
 def main(args):
@@ -218,7 +228,8 @@ def main(args):
                                                hcxconverter=converter,
                                                hierarchy_parent_cutoff=float(theargs.hierarchy_parent_cutoff),
                                                version=cellmaps_generate_hierarchy.__version__,
-                                               provenance_utils=provenance)
+                                               provenance_utils=provenance,
+                                               bootstrap_edges=theargs.bootstrap_edges)
         if theargs.skip_layout is True:
             layoutalgo = None
         else:

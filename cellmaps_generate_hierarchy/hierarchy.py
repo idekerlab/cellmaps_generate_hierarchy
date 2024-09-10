@@ -4,6 +4,8 @@ import csv
 import logging
 import subprocess
 from datetime import date
+import random
+
 import ndex2
 import cdapsutil
 import cellmaps_generate_hierarchy
@@ -80,7 +82,8 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                  hcxconverter=None,
                  hierarchy_parent_cutoff=0.01,
                  author='cellmaps_generate_hierarchy',
-                 version=cellmaps_generate_hierarchy.__version__):
+                 version=cellmaps_generate_hierarchy.__version__,
+                 bootstrap_edges=0):
         """
 
         :param hidef_cmd: HiDeF command line binary
@@ -103,6 +106,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
             self._hidef_cmd = os.path.join(os.path.dirname(self._python), hidef_cmd)
         else:
             self._hidef_cmd = hidef_cmd
+        self._bootstrap_edges = bootstrap_edges
 
     def _get_max_node_id(self, nodes_file):
         """
@@ -427,28 +431,40 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
             net_paths.append(dest_path)
             logger.debug('Writing out id edgelist: ' + str(dest_path))
             id_to_name = self._get_id_to_name_dict(net)
-            with open(dest_path, 'w') as f:
-                for edge_id, edge_obj in net.get_edges():
-                    f.write(str(largest_name_to_id[id_to_name[edge_obj['s']]]) +
-                            '\t' +
-                            str(largest_name_to_id[id_to_name[edge_obj['t']]]) +
-                            '\n')
 
-                # register edgelist file with fairscape
-                data_dict = {'name': os.path.basename(dest_path) + ' PPI id edgelist file',
-                             'description': 'PPI id edgelist file',
-                             'data-format': 'tsv',
-                             'author': str(self._author),
-                             'version': str(self._version),
-                             'date-published': date.today().strftime(
-                                 self._provenance_utils.get_default_date_format_str())}
-                dataset_id = self._provenance_utils.register_dataset(os.path.dirname(dest_path),
-                                                                     source_file=dest_path,
-                                                                     data_dict=data_dict)
-                self._generated_dataset_ids.append(dataset_id)
-                if min_difference != 0:
-                    parent_net, parent_path, min_difference = self._get_parent_net_with_specified_cutoff(
-                        net, n, parent_net, parent_path, min_difference)
+            # Bootstrap edges
+            all_edges = [(edge_obj['s'], edge_obj['t']) for edge_id, edge_obj in net.get_edges()]
+            num_edges_to_remove = int(len(all_edges) * (self._bootstrap_edges / 100))
+            removed_edges = random.sample(all_edges, num_edges_to_remove)
+            remaining_edges = [edge for edge in all_edges if edge not in removed_edges]
+
+            with open(dest_path, 'w') as f:
+                for s, t in remaining_edges:
+                    f.write(str(largest_name_to_id[id_to_name[s]]) + '\t' +
+                            str(largest_name_to_id[id_to_name[t]]) + '\n')
+
+            if len(removed_edges) > 0:
+                removed_edges_path = n + '_removed_edges.tsv'
+                with open(removed_edges_path, 'w') as f:
+                    for s, t in removed_edges:
+                        f.write(str(largest_name_to_id[id_to_name[s]]) + '\t' +
+                                str(largest_name_to_id[id_to_name[t]]) + '\n')
+
+            # register edgelist file with fairscape
+            data_dict = {'name': os.path.basename(dest_path) + ' PPI id edgelist file',
+                         'description': 'PPI id edgelist file',
+                         'data-format': 'tsv',
+                         'author': str(self._author),
+                         'version': str(self._version),
+                         'date-published': date.today().strftime(
+                             self._provenance_utils.get_default_date_format_str())}
+            dataset_id = self._provenance_utils.register_dataset(os.path.dirname(dest_path),
+                                                                 source_file=dest_path,
+                                                                 data_dict=data_dict)
+            self._generated_dataset_ids.append(dataset_id)
+            if min_difference != 0:
+                parent_net, parent_path, min_difference = self._get_parent_net_with_specified_cutoff(
+                    net, n, parent_net, parent_path, min_difference)
 
         logger.debug('Parent network name: ' + parent_net.get_name())
         return parent_path + constants.CX_SUFFIX, parent_net, largest_network, net_paths
