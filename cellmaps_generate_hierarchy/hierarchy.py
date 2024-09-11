@@ -513,8 +513,12 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                                       values='RO-crate: ' + str(rocrate_id))
 
         prov_utils = self._provenance_utils.get_rocrate_provenance_attributes(os.path.dirname(path))
+        description = 'Cell Map Hierarchy'
+        if self._bootstrap_edges > 0:
+            description = (description + ' derived from edgeslists with ' + str(self._bootstrap_edges) +
+                           '% of edges randomly removed')
         network.set_network_attribute(name='description',
-                                      values=str(prov_utils.get_description() + ' Cell Map Hierarchy'))
+                                      values=description + '|' + str(prov_utils.get_description()))
         if prov_utils.get_keywords() is None:
             keyword_subset = []
         else:
