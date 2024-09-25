@@ -418,6 +418,11 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         logger.debug('Largest network name: ' + largest_network.get_name())
         largest_name_to_id = self._get_name_to_id_dict(largest_network)
 
+        # Bootstrap edges
+        all_edges = [(edge_obj['s'], edge_obj['t']) for _, edge_obj in largest_network.get_edges()]
+        num_edges_to_remove = int(len(all_edges) * (self._bootstrap_edges / 100))
+        all_removed_edges = random.sample(all_edges, num_edges_to_remove)
+
         parent_net = None
         parent_path = None
         min_difference = float('inf')
@@ -432,11 +437,16 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
             logger.debug('Writing out id edgelist: ' + str(dest_path))
             id_to_name = self._get_id_to_name_dict(net)
 
-            # Bootstrap edges
-            all_edges = [(edge_obj['s'], edge_obj['t']) for edge_id, edge_obj in net.get_edges()]
-            num_edges_to_remove = int(len(all_edges) * (self._bootstrap_edges / 100))
-            removed_edges = random.sample(all_edges, num_edges_to_remove)
-            remaining_edges = [edge for edge in all_edges if edge not in removed_edges]
+            remaining_edges = list()
+            removed_edges = list()
+            for _, edge_obj in net.get_edges():
+                edge = (edge_obj['s'], edge_obj['t'])
+                if len(removed_edges) >= int(len(net.get_edges()) * (self._bootstrap_edges / 100)):
+                    remaining_edges.append(edge)
+                elif edge not in all_removed_edges:
+                    remaining_edges.append(edge)
+                else:
+                    removed_edges.append(edge)
 
             with open(dest_path, 'w') as f:
                 for s, t in remaining_edges:
@@ -449,6 +459,9 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                     for s, t in removed_edges:
                         f.write(str(largest_name_to_id[id_to_name[s]]) + '\t' +
                                 str(largest_name_to_id[id_to_name[t]]) + '\n')
+
+            if len(remaining_edges) == 0:
+                raise CellmapsGenerateHierarchyError(f"PPI network {n} has no edges. Cannot create hierarchy.")
 
             # register edgelist file with fairscape
             data_dict = {'name': os.path.basename(dest_path) + ' PPI id edgelist file',
