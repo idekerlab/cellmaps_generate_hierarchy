@@ -135,7 +135,8 @@ class HCXFromCDAPSCXHierarchy(object):
                                          values=list(member_ids), type='list_of_long',
                                          overwrite=True)
 
-    def _get_visual_editor_properties_aspect_from_network(self, network=None):
+    @staticmethod
+    def _get_visual_editor_properties_aspect_from_network(network=None):
         """
         Gets ``visualEditorProperties`` aspect from **network**
         :param network:
@@ -148,7 +149,8 @@ class HCXFromCDAPSCXHierarchy(object):
                 return aspect
         return None
 
-    def _get_style_from_network(self, path_to_style_network):
+    @staticmethod
+    def _get_style_from_network(path_to_style_network):
         """
         Retrieves the style network from a given file and fetches the
         `visualEditorProperties` aspect associated with that network.
@@ -161,8 +163,43 @@ class HCXFromCDAPSCXHierarchy(object):
         """
         rawcx2_factory = RawCX2NetworkFactory()
         style_network = rawcx2_factory.get_cx2network(path_to_style_network)
-        visual_editor_props = self._get_visual_editor_properties_aspect_from_network(style_network)
+        visual_editor_props = HCXFromCDAPSCXHierarchy._get_visual_editor_properties_aspect_from_network(style_network)
         return style_network, visual_editor_props
+
+    @staticmethod
+    def _convert_network(network):
+        """
+        Converts the given network into the CX2 format.
+
+        :param network: The network to be converted and styled.
+        :type network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :return: The converted and styled network.
+        :rtype: :py:class:`ndex2.cx2.CX2Network`
+        """
+        cx_factory = NoStyleCXToCX2NetworkFactory()
+        converted_network = cx_factory.get_cx2network(network)
+        return converted_network
+
+    @staticmethod
+    def apply_style_to_network(network, style_filename):
+        """
+        Applies the style to CX2Network from another network from file specified by the path.
+
+        :param network: The network to be converted and styled.
+        :type network: :py:class:`~ndex2.cx2.CX2Network`
+        :param style_filename: The filename of the style to be applied.
+        :type style_filename: str
+        :return: The styled network.
+        :rtype: :py:class:`ndex2.cx2.CX2Network`
+        """
+        path_to_style_network = os.path.join(os.path.dirname(cellmaps_generate_hierarchy.__file__), style_filename)
+        style_network, visual_editor_props = HCXFromCDAPSCXHierarchy._get_style_from_network(path_to_style_network)
+        network.set_visual_properties(style_network.get_visual_properties())
+
+        if (visual_editor_props is not None and
+                HCXFromCDAPSCXHierarchy._get_visual_editor_properties_aspect_from_network(network) is None):
+            network.add_opaque_aspect(visual_editor_props)
+        return network
 
     def _convert_and_style_network(self, network, style_filename):
         """
@@ -175,14 +212,8 @@ class HCXFromCDAPSCXHierarchy(object):
         :return: The converted and styled network.
         :rtype: :py:class:`ndex2.cx2.CX2Network`
         """
-        cx_factory = NoStyleCXToCX2NetworkFactory()
-        converted_network = cx_factory.get_cx2network(network)
-        path_to_style_network = os.path.join(os.path.dirname(cellmaps_generate_hierarchy.__file__), style_filename)
-        style_network, visual_editor_props = self._get_style_from_network(path_to_style_network)
-        converted_network.set_visual_properties(style_network.get_visual_properties())
-
-        if visual_editor_props is not None:
-            converted_network.add_opaque_aspect(visual_editor_props)
+        converted_network = self._convert_network(network)
+        converted_network = self.apply_style_to_network(converted_network, style_filename)
 
         return converted_network
 

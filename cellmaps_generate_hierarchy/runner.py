@@ -19,6 +19,8 @@ from cellmaps_generate_hierarchy.exceptions import CellmapsGenerateHierarchyErro
 from cellmaps_utils.hidefconverter import HierarchyToHiDeFConverter
 from cellmaps_utils.ndexupload import NDExHierarchyUploader
 
+from cellmaps_generate_hierarchy.hcx import HCXFromCDAPSCXHierarchy
+
 logger = logging.getLogger(__name__)
 
 
@@ -135,7 +137,7 @@ class CellmapsGenerateHierarchy(object):
             self._name = self._provenance['name'] if 'name' in self._provenance else 'Hierarchy'
             self._organization_name = self._provenance['organization-name'] \
                 if 'organization-name' in self._provenance else 'NA'
-            self._project_name = self._provenance['project-name']\
+            self._project_name = self._provenance['project-name'] \
                 if 'project-name' in self._provenance else 'NA'
             self._keywords = self._provenance['keywords'] if 'keywords' in self._provenance else ['hierarchy', 'model']
             self._description = self._provenance['description'] if 'description' in self._provenance else \
@@ -556,6 +558,9 @@ class CellmapsGenerateHierarchy(object):
 
             if self._gene_node_attributes is not None:
                 parent_ppi = self._add_gene_node_attributes(parent_ppi)
+                if "bait" in parent_ppi.get_attribute_declarations()['nodes']:
+                    parent_ppi = HCXFromCDAPSCXHierarchy.apply_style_to_network(parent_ppi,
+                                                                                'interactome_style_with_bait.cx2')
 
             parenturl = None
             hierarchyurl = None
