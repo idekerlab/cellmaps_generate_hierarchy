@@ -63,7 +63,7 @@ setup(
     packages=find_packages(include=['cellmaps_generate_hierarchy']),
     package_dir={'cellmaps_generate_hierarchy': 'cellmaps_generate_hierarchy'},
     package_data={'cellmaps_generate_hierarchy': ['interactome_style.cx2', 'interactome_style_with_bait.cx2',
-                                                  'hierarchy_style.cx2']},
+                                                  'hierarchy_style.cx2', 'readme_outputs.txt']},
     scripts=['cellmaps_generate_hierarchy/cellmaps_generate_hierarchycmd.py'],
     url=repo_url,
     version=version,

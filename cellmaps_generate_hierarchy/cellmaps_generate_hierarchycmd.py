@@ -99,7 +99,7 @@ def _parse_arguments(desc, args):
     parser.add_argument('--hierarchy_parent_cutoff', default=0.1,
                         help='PPI network cutoff to be chosen as hierarchy parent network.')
     parser.add_argument('--bootstrap_edges', type=validate_percentage, default=0,
-                        help='Percentage of edges that will be removed randomly for bootstrapping, up to 99%.')
+                        help='Percentage of edges that will be removed randomly for bootstrapping, up to 99.')
     parser.add_argument('--skip_layout', action='store_true',
                         help='If set, skips layout of hierarchy step')
     parser.add_argument('--ndexserver', default='ndexbio.org',

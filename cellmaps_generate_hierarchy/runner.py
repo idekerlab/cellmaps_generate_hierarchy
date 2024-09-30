@@ -510,6 +510,17 @@ class CellmapsGenerateHierarchy(object):
         p_net_attrs = parent_ppi.get_network_attributes()
         parent_ppi.add_network_attribute('name', str(hierarchy.get_name() + ' ' + p_net_attrs['name']))
 
+    def generate_readme(self):
+        description = getattr(cellmaps_generate_hierarchy, '__description__', 'No description provided.')
+        version = getattr(cellmaps_generate_hierarchy, '__version__', '0.0.0')
+
+        with open(os.path.join(os.path.dirname(__file__), 'readme_outputs.txt'), 'r') as f:
+            readme_outputs = f.read()
+
+        readme = readme_outputs.format(DESCRIPTION=description, VERSION=version)
+        with open(os.path.join(self._outdir, 'README.txt'), 'w') as f:
+            f.write(readme)
+
     def run(self):
         """
         Runs CM4AI Generate Hierarchy
@@ -532,6 +543,9 @@ class CellmapsGenerateHierarchy(object):
                                            start_time=self._start_time,
                                            data={'commandlineargs': self._input_data_dict},
                                            version=cellmaps_generate_hierarchy.__version__)
+
+            self.generate_readme()
+
             self._update_provenance_fields()
 
             self._create_rocrate()
