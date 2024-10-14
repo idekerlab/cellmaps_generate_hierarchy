@@ -522,21 +522,26 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         network.set_network_attribute(name='prov:wasGeneratedBy',
                                       values=self._author + ' ' + self._version)
         rocrate_id = self._provenance_utils.get_id_of_rocrate(os.path.dirname(path))
-        network.set_network_attribute(name='prov:wasDerivedFrom',
-                                      values='RO-crate: ' + str(rocrate_id))
 
-        prov_utils = self._provenance_utils.get_rocrate_provenance_attributes(os.path.dirname(path))
         description = 'Cell Map Hierarchy'
-        if self._bootstrap_edges > 0:
-            description = (description + ' derived from edgeslists with ' + str(self._bootstrap_edges) +
-                           '% of edges randomly removed')
-        network.set_network_attribute(name='description',
-                                      values=description + '|' + str(prov_utils.get_description()))
-        if prov_utils.get_keywords() is None:
-            keyword_subset = []
+        if rocrate_id is not None:
+            network.set_network_attribute(name='prov:wasDerivedFrom',
+                                          values='RO-crate: ' + str(rocrate_id))
+
+            prov_utils = self._provenance_utils.get_rocrate_provenance_attributes(os.path.dirname(path))
+            if self._bootstrap_edges > 0:
+                description = (description + ' derived from edgeslists with ' + str(self._bootstrap_edges) +
+                               '% of edges randomly removed')
+            network.set_network_attribute(name='description',
+                                          values=description + '|' + str(prov_utils.get_description()))
+            if prov_utils.get_keywords() is None:
+                keyword_subset = []
+            else:
+                keyword_subset = prov_utils.get_keywords()[:6]
+            network.set_name(prov_utils.get_name() + ' - ' + ' '.join(keyword_subset) + ' hierarchy')
         else:
-            keyword_subset = prov_utils.get_keywords()[:6]
-        network.set_name(prov_utils.get_name() + ' - ' + ' '.join(keyword_subset) + ' hierarchy')
+            network.set_network_attribute(name='description', values=description)
+            network.set_name(description)
 
     def _annotate_hierarchy_nodes(self, network):
         """
@@ -553,6 +558,64 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
             network.set_node_attribute(node_id, 'CD_Labeled',
                                        values='true', type='boolean',
                                        overwrite=True)
+
+    def _run_hidef(self, edgelist_files, outputprefix, algorithm, maxres, k):
+        cmd = [self._python, self._hidef_cmd, '--g']
+        cmd.extend(edgelist_files)
+        cmd.extend(['--o', outputprefix,
+                    '--alg', algorithm, '--maxres', str(maxres), '--k', str(k),
+                    '--skipgml'])
+
+        exit_code, out, err = self._run_cmd(cmd)
+
+        if exit_code != 0:
+            logger.error('Cmd failed with exit code: ' + str(exit_code) +
+                         ' : ' + str(out) + ' : ' + str(err))
+            raise CellmapsGenerateHierarchyError('Cmd failed with exit code: ' + str(exit_code) +
+                                                 ' : ' + str(out) + ' : ' + str(err))
+
+    def get_hierarchy_from_edgelists(self, outdir, edgelist_files, parent_net, algorithm='leiden', maxres=80, k=10):
+        """
+        Generates a hierarchy from edgelist files using HiDeF.
+
+        This method runs the HiDeF algorithm on the provided edgelist files to generate a hierarchical community structure.
+        It optionally refines the hierarchy, converts the HiDeF output to CDAPS format, and then uses `cdapsutil` to run
+        community detection on the parent network.
+
+        :param outdir: The output directory where HiDeF results and intermediate files will be stored.
+        :type outdir: str
+        :param edgelist_files: A list of paths to edgelist files to be used as input to HiDeF.
+        :type edgelist_files: list
+        :param parent_net: The parent network on which community detection is performed.
+        :type parent_net: networkx.Graph
+        :param algorithm: The algorithm to use for community detection (default is 'leiden').
+        :type algorithm: str
+        :param maxres: The maximum resolution parameter for HiDeF (default is 80).
+        :type maxres: int
+        :param k: The k parameter for HiDeF (default is 10).
+        :type k: int
+        :return: A tuple containing the resulting hierarchy and the path to the CDAPS output JSON file, or (None, None) if an error occurs.
+        :rtype: tuple (hierarchy, str) or (None, None)
+        :raises FileNotFoundError: If no output is generated from HiDeF.
+        """
+        outputprefix = os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX)
+        self._run_hidef(edgelist_files, outputprefix, algorithm, maxres, k)
+
+        try:
+            if self._refiner is not None:
+                self._refiner.refine_hierarchy(outprefix=outputprefix)
+
+            cdaps_out_file = os.path.join(outdir,
+                                          CDAPSHiDeFHierarchyGenerator.CDAPS_JSON_FILE)
+            with open(cdaps_out_file, 'w') as out_stream:
+                self.convert_hidef_output_to_cdaps(out_stream, outdir)
+
+            cd = cdapsutil.CommunityDetection(runner=cdapsutil.ExternalResultsRunner())
+            hier = cd.run_community_detection(parent_net, algorithm=cdaps_out_file)
+            return hier, cdaps_out_file
+        except FileNotFoundError as fe:
+            logger.error('No output from hidef: ' + str(fe) + '\n')
+        return None, None
 
     def get_hierarchy(self, networks, algorithm='leiden', maxres=80, k=10):
         """
@@ -575,6 +638,12 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         :param networks: Paths (without suffix ie .cx) to PPI networks to be
                          used as input to HiDeF
         :type networks: list
+        :param algorithm: The algorithm to use for community detection (default is 'leiden').
+        :type algorithm: str
+        :param maxres: The maximum resolution parameter for HiDeF (default is 80).
+        :type maxres: int
+        :param k: The k parameter for HiDeF (default is 10).
+        :type k: int
         :raises CellmapsGenerateHierarchyError: If there was an error
         :return: Resulting hierarchy or ``None`` if no hierarchy from HiDeF
         :return: (hierarchy as list,
@@ -587,55 +656,30 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
 
         (parent_net_path, parent_net, largest_net, edgelist_files) = self._create_edgelist_files_for_networks(networks)
 
-        cmd = [self._python, self._hidef_cmd, '--g']
-        cmd.extend(edgelist_files)
-        outputprefix = os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX)
-        cmd.extend(['--o', outputprefix,
-                    '--alg', algorithm, '--maxres', str(maxres), '--k', str(k),
-                    '--skipgml'])
-
-        exit_code, out, err = self._run_cmd(cmd)
+        hier, cdaps_out_file = self.get_hierarchy_from_edgelists(outdir, edgelist_files, largest_net,
+                                                                 algorithm, maxres, k)
         self._clean_tmp_edgelist_files(edgelist_files)
+        self._annotate_hierarchy(network=hier, path=parent_net_path)
+        self._annotate_hierarchy_nodes(network=hier)
+        hierarchy_in_hcx = self._hcxconverter.get_converted_hierarchy(hierarchy=hier,
+                                                                      parent_network=parent_net)
 
-        if exit_code != 0:
-            logger.error('Cmd failed with exit code: ' + str(exit_code) +
-                         ' : ' + str(out) + ' : ' + str(err))
-            raise CellmapsGenerateHierarchyError('Cmd failed with exit code: ' + str(exit_code) +
-                                                 ' : ' + str(out) + ' : ' + str(err))
-
+        # Register outputs from hierarchy generation
         self._register_hidef_output_files(outdir)
 
-        try:
-            if self._refiner is not None:
-                self._refiner.refine_hierarchy(outprefix=outputprefix)
+        # register cdaps json file with fairscape
+        data_dict = {'name': os.path.basename(cdaps_out_file) + ' CDAPS output JSON file',
+                     'description': 'CDAPS output JSON file',
+                     'data-format': 'json',
+                     'author': str(self._author),
+                     'version': str(self._version),
+                     'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
+        dataset_id = self._provenance_utils.register_dataset(os.path.dirname(cdaps_out_file),
+                                                             source_file=cdaps_out_file,
+                                                             data_dict=data_dict)
+        self._generated_dataset_ids.append(dataset_id)
 
-            cdaps_out_file = os.path.join(outdir,
-                                          CDAPSHiDeFHierarchyGenerator.CDAPS_JSON_FILE)
-            with open(cdaps_out_file, 'w') as out_stream:
-                self.convert_hidef_output_to_cdaps(out_stream, outdir)
-
-            # register cdaps json file with fairscape
-            data_dict = {'name': os.path.basename(cdaps_out_file) + ' CDAPS output JSON file',
-                         'description': 'CDAPS output JSON file',
-                         'data-format': 'json',
-                         'author': str(self._author),
-                         'version': str(self._version),
-                         'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
-            dataset_id = self._provenance_utils.register_dataset(os.path.dirname(cdaps_out_file),
-                                                                 source_file=cdaps_out_file,
-                                                                 data_dict=data_dict)
-            self._generated_dataset_ids.append(dataset_id)
-
-            cd = cdapsutil.CommunityDetection(runner=cdapsutil.ExternalResultsRunner())
-            hier = cd.run_community_detection(largest_net, algorithm=cdaps_out_file)
-            self._annotate_hierarchy(network=hier, path=parent_net_path)
-            self._annotate_hierarchy_nodes(network=hier)
-
-            return self._hcxconverter.get_converted_hierarchy(hierarchy=hier,
-                                                              parent_network=parent_net)
-        except FileNotFoundError as fe:
-            logger.error('No output from hidef: ' + str(fe) + '\n')
-        return None, None
+        return hierarchy_in_hcx
 
     def _clean_tmp_edgelist_files(self, edgelist_files):
         for file in edgelist_files:
