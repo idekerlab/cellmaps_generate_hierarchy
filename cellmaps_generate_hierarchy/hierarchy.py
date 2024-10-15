@@ -587,7 +587,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         :param edgelist_files: A list of paths to edgelist files to be used as input to HiDeF.
         :type edgelist_files: list
         :param parent_net: The parent network on which community detection is performed.
-        :type parent_net: networkx.Graph
+        :type parent_net: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
         :param algorithm: The algorithm to use for community detection (default is 'leiden').
         :type algorithm: str
         :param maxres: The maximum resolution parameter for HiDeF (default is 80).
