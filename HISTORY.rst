@@ -6,8 +6,8 @@ History
 0.2.0 (2024-10-16)
 ------------------
 
-* Added the ``--bootstrap_edges`` flag, which allows specifying the percentage of edges to be randomly
-    removed from each PPI network (across networks at different PPI cutoffs).
+* Added the ``--bootstrap_edges`` flag, which allows specifying the percentage of edges to be randomly removed
+  from each PPI network (across networks at different PPI cutoffs).
 
 * Added a style for proteins specified as bait.
 
