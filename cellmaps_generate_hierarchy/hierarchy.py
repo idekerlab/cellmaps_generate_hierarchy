@@ -80,7 +80,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                  provenance_utils=ProvenanceUtil(),
                  refiner=None,
                  hcxconverter=None,
-                 hierarchy_parent_cutoff=0.01,
+                 hierarchy_parent_cutoff=0.1,
                  author='cellmaps_generate_hierarchy',
                  version=cellmaps_generate_hierarchy.__version__,
                  bootstrap_edges=0):

@@ -77,8 +77,6 @@ def _parse_arguments(desc, args):
                         help='HiDeF clustering algorithm parameter')
     parser.add_argument('--maxres', default=80,
                         help='HiDeF max resolution parameter')
-    parser.add_argument('--stability', default=0.,
-                        help='Containment index threshold for pruning hierarchy')
     parser.add_argument('--containment_threshold', default=0.75,
                         help='Containment index threshold for pruning hierarchy')
     parser.add_argument('--jaccard_threshold', default=0.9,
