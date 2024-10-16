@@ -97,8 +97,6 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                          author=author,
                          version=version)
         self._refiner = refiner
-        if hcxconverter is None:
-            raise CellmapsGenerateHierarchyError('HCX converter must be set')
         self._hcxconverter = hcxconverter
         self._hierarchy_parent_cutoff = hierarchy_parent_cutoff
         self._python = sys.executable
@@ -587,7 +585,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         :param edgelist_files: A list of paths to edgelist files to be used as input to HiDeF.
         :type edgelist_files: list
         :param parent_net: The parent network on which community detection is performed.
-        :type parent_net: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :type parent_net: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork` or :py:class:`~ndex2.cx2.CX2Network`
         :param algorithm: The algorithm to use for community detection (default is 'leiden').
         :type algorithm: str
         :param maxres: The maximum resolution parameter for HiDeF (default is 80).
@@ -652,6 +650,8 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                   or None, None if not created
         :rtype: tuple
         """
+        if self._hcxconverter is None:
+            raise CellmapsGenerateHierarchyError('HCX converter must be set')
         outdir = os.path.dirname(networks[0])
 
         (parent_net_path, parent_net, largest_net, edgelist_files) = self._create_edgelist_files_for_networks(networks)

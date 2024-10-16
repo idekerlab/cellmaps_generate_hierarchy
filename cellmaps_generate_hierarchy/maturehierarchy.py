@@ -594,4 +594,7 @@ class HiDeFHierarchyRefiner(object):
         edges.to_csv(outprefix+'.pruned.edges', sep='\t', header=None,index=None)
 
         logger.debug('Number of edges is ' + str(len(edges)) + ', number of nodes are ' + str(len(nodes)))
-        return self._register_pruned_hidef_output_files(outprefix + '.pruned')
+        if self._provenance_utils is not None:
+            return self._register_pruned_hidef_output_files(outprefix + '.pruned')
+        else:
+            return list()
