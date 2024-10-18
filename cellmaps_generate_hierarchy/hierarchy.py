@@ -76,14 +76,18 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
 
     PERSISTENCE_COL_NAME = 'HiDeF_persistence'
 
+    HIERARCHY_PARENT_CUTOFF = 0.1
+
+    BOOTSTRAP_EDGES = 0
+
     def __init__(self, hidef_cmd='hidef_finder.py',
                  provenance_utils=ProvenanceUtil(),
                  refiner=None,
                  hcxconverter=None,
-                 hierarchy_parent_cutoff=0.1,
+                 hierarchy_parent_cutoff=HIERARCHY_PARENT_CUTOFF,
                  author='cellmaps_generate_hierarchy',
                  version=cellmaps_generate_hierarchy.__version__,
-                 bootstrap_edges=0):
+                 bootstrap_edges=BOOTSTRAP_EDGES):
         """
 
         :param hidef_cmd: HiDeF command line binary

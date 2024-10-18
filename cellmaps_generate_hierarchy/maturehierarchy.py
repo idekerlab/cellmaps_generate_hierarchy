@@ -34,11 +34,16 @@ class HiDeFHierarchyRefiner(object):
     NODES_SUFFIX = '.nodes'
     EDGES_SUFFIX = '.edges'
 
+    CONTAINMENT_THRESHOLD = 0.75
+    JACCARD_THRESHOLD = 0.9
+    MIN_DIFF = 1
+    MIN_SYSTEM_SIZE = 4
+
     def __init__(self,
-                 ci_thre=0.75,
-                 ji_thre=0.9,
-                 min_term_size=4,
-                 min_diff=1,
+                 ci_thre=CONTAINMENT_THRESHOLD,
+                 ji_thre=JACCARD_THRESHOLD,
+                 min_term_size=MIN_SYSTEM_SIZE,
+                 min_diff=MIN_DIFF,
                  provenance_utils=ProvenanceUtil(),
                  author='cellmaps_generate_hierarchy',
                  version=cellmaps_generate_hierarchy.__version__):

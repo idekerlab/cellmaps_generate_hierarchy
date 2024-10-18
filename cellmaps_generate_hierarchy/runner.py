@@ -29,13 +29,16 @@ class CellmapsGenerateHierarchy(object):
     Runs steps necessary to create PPI from embedding and to
     generate a hierarchy
     """
+    K_DEFAULT = 10
+    ALGORITHM = 'leiden'
+    MAXRES = 80
 
     def __init__(self, outdir=None,
                  inputdirs=[],
                  ppigen=None,
-                 algorithm='leiden',
-                 maxres=80,
-                 k=10,
+                 algorithm=ALGORITHM,
+                 maxres=MAXRES,
+                 k=K_DEFAULT,
                  gene_node_attributes=None,
                  hiergen=None,
                  name=None,
@@ -108,6 +111,25 @@ class CellmapsGenerateHierarchy(object):
         self.keep_intermediate_files = keep_intermediate_files
         self._provenance = provenance
 
+        if self._input_data_dict is None:
+            self._input_data_dict = {'outdir': self._outdir,
+                                     'inputdirs': self._inputdirs,
+                                     'embedding_generator': str(self._ppigen),
+                                     'algorithm': self._algorithm,
+                                     'maxres': self._maxres,
+                                     'k': self._k,
+                                     'gene_node_attributes': str(self._gene_node_attributes),
+                                     'hiergen': str(self._hiergen),
+                                     'ndexserver': self._server,
+                                     'ndexuser': self._user,
+                                     'ndexpassword': self._password,
+                                     'name': self._name,
+                                     'project_name': self._project_name,
+                                     'organization_name': self._organization_name,
+                                     'skip_logging': self._skip_logging,
+                                     'provenance': str(self._provenance)
+                                     }
+
     def _update_provenance_fields(self):
         """
 
@@ -115,9 +137,13 @@ class CellmapsGenerateHierarchy(object):
         """
         rocrate_dirs = []
         if self._inputdirs is not None:
-            for embeddind_dir in self._inputdirs:
-                if os.path.exists(os.path.join(embeddind_dir, constants.RO_CRATE_METADATA_FILE)):
-                    rocrate_dirs.append(embeddind_dir)
+            if isinstance(self._inputdirs, str):
+                if os.path.exists(os.path.join(os.path.abspath(self._inputdirs), constants.RO_CRATE_METADATA_FILE)):
+                    rocrate_dirs.append(self._inputdirs)
+            else:
+                for embeddind_dir in self._inputdirs:
+                    if os.path.exists(os.path.join(os.path.abspath(embeddind_dir), constants.RO_CRATE_METADATA_FILE)):
+                        rocrate_dirs.append(embeddind_dir)
         if len(rocrate_dirs) > 0:
             prov_attrs = self._provenance_utils.get_merged_rocrate_provenance_attrs(self._inputdirs,
                                                                                     override_name=self._name,

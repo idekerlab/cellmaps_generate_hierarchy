@@ -71,32 +71,32 @@ def _parse_arguments(desc, args):
                         help='Name of project running this tool, needed for '
                              'FAIRSCAPE. If unset, project name specified '
                              'in --coembedding_dir directory or provenance file will be used')
-    parser.add_argument('--k', default=10,
+    parser.add_argument('--k', default=CellmapsGenerateHierarchy.K_DEFAULT,
                         help='HiDeF stability parameter')
-    parser.add_argument('--algorithm', default='leiden',
+    parser.add_argument('--algorithm', default=CellmapsGenerateHierarchy.ALGORITHM,
                         help='HiDeF clustering algorithm parameter')
-    parser.add_argument('--maxres', default=80,
+    parser.add_argument('--maxres', default=CellmapsGenerateHierarchy.MAXRES,
                         help='HiDeF max resolution parameter')
-    parser.add_argument('--containment_threshold', default=0.75,
+    parser.add_argument('--containment_threshold', default=HiDeFHierarchyRefiner.CONTAINMENT_THRESHOLD,
                         help='Containment index threshold for pruning hierarchy')
-    parser.add_argument('--jaccard_threshold', default=0.9,
+    parser.add_argument('--jaccard_threshold', default=HiDeFHierarchyRefiner.JACCARD_THRESHOLD,
                         help='Jaccard index threshold for merging similar clusters')
-    parser.add_argument('--min_diff', default=1,
+    parser.add_argument('--min_diff', default=HiDeFHierarchyRefiner.MIN_DIFF,
                         help='Minimum difference in number of proteins for every '
                              'parent-child pair')
-    parser.add_argument('--min_system_size', default=4,
+    parser.add_argument('--min_system_size', default=HiDeFHierarchyRefiner.MIN_SYSTEM_SIZE,
                         help='Minimum number of proteins each system must have to be kept')
     parser.add_argument('--ppi_cutoffs', nargs='+', type=float,
-                        default=[0.001, 0.002, 0.003, 0.004, 0.005, 0.006,
-                                 0.007, 0.008, 0.009, 0.01, 0.02, 0.03,
-                                 0.04, 0.05, 0.10],
+                        default=CosineSimilarityPPIGenerator.PPI_CUTOFFS,
                         help='Cutoffs used to generate PPI input networks. For example, '
                              'a value of 0.1 means to generate PPI input network using the '
                              'top ten percent of coembedding entries. Each cutoff generates '
                              'another PPI network')
-    parser.add_argument('--hierarchy_parent_cutoff', default=0.1,
+    parser.add_argument('--hierarchy_parent_cutoff',
+                        default=CDAPSHiDeFHierarchyGenerator.HIERARCHY_PARENT_CUTOFF,
                         help='PPI network cutoff to be chosen as hierarchy parent network.')
-    parser.add_argument('--bootstrap_edges', type=validate_percentage, default=0,
+    parser.add_argument('--bootstrap_edges', type=validate_percentage,
+                        default=CDAPSHiDeFHierarchyGenerator.BOOTSTRAP_EDGES,
                         help='Percentage of edges that will be removed randomly for bootstrapping, up to 99.')
     parser.add_argument('--skip_layout', action='store_true',
                         help='If set, skips layout of hierarchy step')
