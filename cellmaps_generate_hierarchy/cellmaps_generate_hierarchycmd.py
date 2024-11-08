@@ -71,20 +71,20 @@ def _parse_arguments(desc, args):
                         help='Name of project running this tool, needed for '
                              'FAIRSCAPE. If unset, project name specified '
                              'in --coembedding_dir directory or provenance file will be used')
-    parser.add_argument('--k', default=CellmapsGenerateHierarchy.K_DEFAULT,
+    parser.add_argument('--k', default=CellmapsGenerateHierarchy.K_DEFAULT, type=float,
                         help='HiDeF stability parameter')
     parser.add_argument('--algorithm', default=CellmapsGenerateHierarchy.ALGORITHM,
                         help='HiDeF clustering algorithm parameter')
-    parser.add_argument('--maxres', default=CellmapsGenerateHierarchy.MAXRES,
+    parser.add_argument('--maxres', default=CellmapsGenerateHierarchy.MAXRES, type=float,
                         help='HiDeF max resolution parameter')
-    parser.add_argument('--containment_threshold', default=HiDeFHierarchyRefiner.CONTAINMENT_THRESHOLD,
+    parser.add_argument('--containment_threshold', default=HiDeFHierarchyRefiner.CONTAINMENT_THRESHOLD, type=float,
                         help='Containment index threshold for pruning hierarchy')
-    parser.add_argument('--jaccard_threshold', default=HiDeFHierarchyRefiner.JACCARD_THRESHOLD,
+    parser.add_argument('--jaccard_threshold', default=HiDeFHierarchyRefiner.JACCARD_THRESHOLD, type=float,
                         help='Jaccard index threshold for merging similar clusters')
-    parser.add_argument('--min_diff', default=HiDeFHierarchyRefiner.MIN_DIFF,
+    parser.add_argument('--min_diff', default=HiDeFHierarchyRefiner.MIN_DIFF, type=float,
                         help='Minimum difference in number of proteins for every '
                              'parent-child pair')
-    parser.add_argument('--min_system_size', default=HiDeFHierarchyRefiner.MIN_SYSTEM_SIZE,
+    parser.add_argument('--min_system_size', default=HiDeFHierarchyRefiner.MIN_SYSTEM_SIZE, type=float,
                         help='Minimum number of proteins each system must have to be kept')
     parser.add_argument('--ppi_cutoffs', nargs='+', type=float,
                         default=CosineSimilarityPPIGenerator.PPI_CUTOFFS,
@@ -93,7 +93,7 @@ def _parse_arguments(desc, args):
                              'top ten percent of coembedding entries. Each cutoff generates '
                              'another PPI network')
     parser.add_argument('--hierarchy_parent_cutoff',
-                        default=CDAPSHiDeFHierarchyGenerator.HIERARCHY_PARENT_CUTOFF,
+                        default=CDAPSHiDeFHierarchyGenerator.HIERARCHY_PARENT_CUTOFF, type=float,
                         help='PPI network cutoff to be chosen as hierarchy parent network.')
     parser.add_argument('--bootstrap_edges', type=validate_percentage,
                         default=CDAPSHiDeFHierarchyGenerator.BOOTSTRAP_EDGES,
