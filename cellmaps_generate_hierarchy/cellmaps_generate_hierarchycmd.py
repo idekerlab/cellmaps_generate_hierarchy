@@ -104,7 +104,7 @@ def _parse_arguments(desc, args):
                         help='Server where hierarchy can be converted to HCX and saved')
     parser.add_argument('--ndexuser',
                         help='NDEx user account')
-    parser.add_argument('--ndexpassword',
+    parser.add_argument('--ndexpassword', default='-',
                         help='NDEx password. Enter "-" to input password interactively, '
                              'or provide a file containing the password. Leave blank to not use a password.')
     parser.add_argument('--visibility', action='store_true',
@@ -189,7 +189,7 @@ def main(args):
 
     try:
         logutils.setup_cmd_logging(theargs)
-        if theargs.ndexpassword == '-':
+        if theargs.ndexuser is not None and theargs.ndexpassword == '-':
             theargs.ndexpassword = getpass.getpass(prompt="Enter NDEx Password: ")
         if theargs.mode == 'ndexsave':
             ndex_uploader = NDExHierarchyUploader(theargs.ndexserver, theargs.ndexuser, theargs.ndexpassword,
