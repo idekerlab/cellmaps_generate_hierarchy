@@ -27,11 +27,11 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['cellmaps_utils',
-                'requests',
-                'tqdm',
-                'pandas',
-                'numpy',
+requirements = ['cellmaps_utils>=0.4.0,<1.0.0',
+                'requests>=2.31.0,<3.0.0',
+                'tqdm>=4.66.6,<5.0.0',
+                'pandas>=2.0.0,<3.0.0',
+                'numpy>=1.24.4,<2.0.0',
                 'ndex2>=3.5.1,<4.0.0',
                 'cdapsutil>=0.2.2,<1.0.0',
                 'leidenalg==0.9.1',
