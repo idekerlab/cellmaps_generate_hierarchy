@@ -299,7 +299,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         out_stream.write('\n')
         return None
 
-    def _run_cmd(self, cmd, cwd=None, timeout=36000):
+    def _run_cmd(self, cmd, cwd=None, timeout=86400):
         """
         Runs command as a command line process
 
