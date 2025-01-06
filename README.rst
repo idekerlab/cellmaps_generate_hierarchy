@@ -1,7 +1,7 @@
 =============================
 Cell Maps Generate Hierarchy
 =============================
-
+The Cell Maps Generate Hierarchy is part of the Cell Mapping Toolkit
 
 .. image:: https://img.shields.io/pypi/v/cellmaps_generate_hierarchy.svg
         :target: https://pypi.python.org/pypi/cellmaps_generate_hierarchy

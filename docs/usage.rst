@@ -30,14 +30,19 @@ For information invoke :code:`cellmaps_generate_hierarchycmd.py -h`
 
 **Usage**
 
+In `run` mode (hierarchy generation):
+
 .. code-block::
 
   cellmaps_generate_hierarchycmd.py [outdir] [--coembedding_dirs COEMBEDDINGDIRS [COEMBEDDINGDIRS ...]] [OPTIONS]
+
+In `ndexsave` mode (saving hierarchy to NDEx):
 
 .. code-block::
 
   cellmaps_generate_hierarchycmd.py [outdir] [--mode ndexsave] [--ndexuser NDEXUSER] [--ndexpassword NDEXPASSWORD]
 
+In `convert` mode (converting hierarchy to HiDeF files)
 
 .. code-block::
 
@@ -55,7 +60,8 @@ For information invoke :code:`cellmaps_generate_hierarchycmd.py -h`
     Processing mode. If set to ``run`` then hierarchy is generated. If set to ``ndexsave``,
     it is assumes hierarchy has been generated (named hierarchy.cx2 and parent_hierarchy.cx2) and put in ``outdir``
     passed in via the command line and this tool will save the hierarchy to NDEx using ``--ndexserver``, ``--ndexuser``,
-    and ``--ndexpassword`` credentials
+    and ``--ndexpassword`` credentials. If set to convert, it is assumes hierarchy has been generated (named
+    hierarchy.cx2) and it converts the hierarchy to HiDeF .nodes and .edges files.
 
 *Required in 'run' mode*
 
