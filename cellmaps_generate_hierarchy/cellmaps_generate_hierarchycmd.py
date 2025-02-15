@@ -219,11 +219,8 @@ def main(args):
                                         min_diff=theargs.min_diff,
                                         provenance_utils=provenance)
 
-        converter = HCXFromCDAPSCXHierarchy()
-
         hiergen = CDAPSHiDeFHierarchyGenerator(author='cellmaps_generate_hierarchy',
                                                refiner=refiner,
-                                               hcxconverter=converter,
                                                hierarchy_parent_cutoff=float(theargs.hierarchy_parent_cutoff),
                                                version=cellmaps_generate_hierarchy.__version__,
                                                provenance_utils=provenance,

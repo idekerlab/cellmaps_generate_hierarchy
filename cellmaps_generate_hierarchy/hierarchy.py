@@ -5,9 +5,14 @@ import logging
 import subprocess
 from datetime import date
 import random
+from time import sleep
 
 import ndex2
 import cdapsutil
+from cellmaps_utils.hidefconverter import HiDeFToHierarchyConverter
+from ndex2 import NiceCXNetwork
+from ndex2.cx2 import RawCX2NetworkFactory, CX2Network, NoStyleCXToCX2NetworkFactory
+
 import cellmaps_generate_hierarchy
 from cellmaps_utils import constants
 from cellmaps_utils.provenance import ProvenanceUtil
@@ -333,7 +338,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         :param networks: list of :py:class:`~ndex2.nice_cx_network.NiceCXNetwork` objects
         :type networks: list
         :return: Largest network
-        :rtype: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :rtype: str
         """
         largest_network = None
         max_file_size = 0
@@ -343,6 +348,24 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                 largest_network = n
                 max_file_size = file_size
         return largest_network
+
+    def _get_largest_edgelist(self, edgelists):
+        """
+        Finds largest network by file size
+
+        :param networks: list of :py:class:`~ndex2.nice_cx_network.NiceCXNetwork` objects
+        :type networks: list
+        :return: Largest network
+        :rtype: str
+        """
+        largest_edgelist = None
+        max_file_size = 0
+        for n in edgelists:
+            file_size = os.path.getsize(n)
+            if file_size >= max_file_size:
+                largest_edgelist = n
+                max_file_size = file_size
+        return largest_edgelist
 
     def _get_parent_net_with_specified_cutoff(self, network, path, closest_net, closest_path,
                                               min_difference=float('inf')):
@@ -517,49 +540,55 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         ``prov:wasDerivedFrom`` to FAIRSCAPE dataset id of this rocrate
 
         :param network: Hierarchy
-        :type network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :type network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork` or :py:class:`~ndex2.cx2.CX2Network`
         :param path: Path to parent PPI network in CX or CX2 format
         :type path: str
         """
-        network.set_network_attribute(name='prov:wasGeneratedBy',
-                                      values=self._author + ' ' + self._version)
+        network.add_network_attribute('prov:wasGeneratedBy', self._author + ' ' + self._version)
         rocrate_id = self._provenance_utils.get_id_of_rocrate(os.path.dirname(path))
 
         description = 'Cell Map Hierarchy'
         if rocrate_id is not None:
-            network.set_network_attribute(name='prov:wasDerivedFrom',
-                                          values='RO-crate: ' + str(rocrate_id))
+            network.add_network_attribute('prov:wasDerivedFrom', 'RO-crate: ' + str(rocrate_id))
 
             prov_utils = self._provenance_utils.get_rocrate_provenance_attributes(os.path.dirname(path))
             if self._bootstrap_edges > 0:
                 description = (description + ' derived from edgeslists with ' + str(self._bootstrap_edges) +
                                '% of edges randomly removed')
-            network.set_network_attribute(name='description',
-                                          values=description + '|' + str(prov_utils.get_description()))
+            network.add_network_attribute('description', description + '|' + str(prov_utils.get_description()))
             if prov_utils.get_keywords() is None:
                 keyword_subset = []
             else:
                 keyword_subset = prov_utils.get_keywords()[:6]
-            network.set_name(prov_utils.get_name() + ' - ' + ' '.join(keyword_subset) + ' hierarchy')
+            network.add_network_attribute('name',
+                                          prov_utils.get_name() + ' - ' + ' '.join(keyword_subset) + ' hierarchy')
         else:
-            network.set_network_attribute(name='description', values=description)
-            network.set_name(description)
+            network.add_network_attribute('description', description)
+            network.add_network_attribute('name', description)
 
     def _annotate_hierarchy_nodes(self, network):
         """
         Annotates each node in the hierarchy with its community name and a label flag.
 
         :param network: The hierarchy containing nodes to be annotated.
-        :type network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork`
+        :type network: :py:class:`~ndex2.nice_cx_network.NiceCXNetwork` or :py:class:`~ndex2.cx2.CX2Network`
         """
-        for node_id, node_obj in network.get_nodes():
-            name = node_obj['n']
-            network.set_node_attribute(node_id, 'CD_CommunityName',
-                                       values=name, type='string',
-                                       overwrite=True)
-            network.set_node_attribute(node_id, 'CD_Labeled',
-                                       values='true', type='boolean',
-                                       overwrite=True)
+        if isinstance(network, NiceCXNetwork):
+            for node_id, node_obj in network.get_nodes():
+                name = node_obj['n']
+                network.set_node_attribute(node_id, 'CD_CommunityName',
+                                           values=name, type='string',
+                                           overwrite=True)
+                network.set_node_attribute(node_id, 'CD_Labeled',
+                                           values='true', type='boolean',
+                                           overwrite=True)
+        elif isinstance(network, CX2Network):
+            for node_id, node_obj in network.get_nodes().items():
+                name = node_obj.get('name', node_id)
+                network.add_node_attribute(node_id, 'CD_CommunityName', name, 'string')
+                network.add_node_attribute(node_id, 'CD_Labeled', 'true', 'boolean')
+        else:
+            raise CellmapsGenerateHierarchyError("Network must be instance of NiceCXNetwork or CX2Network")
 
     def _run_hidef(self, edgelist_files, outputprefix, algorithm, maxres, k):
         cmd = [self._python, self._hidef_cmd, '--g']
@@ -576,6 +605,39 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
             raise CellmapsGenerateHierarchyError('Cmd failed with exit code: ' + str(exit_code) +
                                                  ' : ' + str(out) + ' : ' + str(err))
 
+    def get_hcx_from_edgelists(self, outdir, edgelist_files, algorithm='leiden', maxres=80, k=10):
+        outputprefix = os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX)
+        self._run_hidef(edgelist_files, outputprefix, algorithm, maxres, k)
+
+        try:
+            if self._refiner is not None:
+                self._refiner.refine_hierarchy(outprefix=outputprefix)
+
+            nodefile = os.path.join(outdir,
+                                    CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX +
+                                    '.pruned.nodes')
+            edgefile = os.path.join(outdir,
+                                    CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX +
+                                    '.pruned.edges')
+            converter = HiDeFToHierarchyConverter(
+                output_dir=outdir,
+                nodes_file_path=nodefile,
+                edges_file_path=edgefile,
+                parent_edgelist_path=
+                self._get_largest_edgelist(edgelist_files)
+            )
+            print("converter")
+            converter.generate_hierarchy_hcx_file()
+            print("Generated")
+
+            factory = RawCX2NetworkFactory()
+            return factory.get_cx2network(os.path.join(outdir,
+                                                       constants.HIERARCHY_NETWORK_PREFIX + constants.CX2_SUFFIX))
+
+        except FileNotFoundError as fe:
+            logger.error('No output from hidef: ' + str(fe) + '\n')
+        return None
+
     def get_hierarchy_from_edgelists(self, outdir, edgelist_files, parent_net, algorithm='leiden', maxres=80, k=10):
         """
         Generates a hierarchy from edgelist files using HiDeF.
@@ -583,6 +645,12 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         This method runs the HiDeF algorithm on the provided edgelist files to generate a hierarchical community structure.
         It optionally refines the hierarchy, converts the HiDeF output to CDAPS format, and then uses `cdapsutil` to run
         community detection on the parent network.
+
+        .. deprecated:: 0.3.0
+
+            This method is deprecated. It was used obtain hierarchy in CX from HiDeF files, first convertsing the HiDeF
+            output to CDAPS format, and then uses `cdapsutil` to run community detection on the parent network. Now
+            HiDeF is directly translated to HCX.
 
         :param outdir: The output directory where HiDeF results and intermediate files will be stored.
         :type outdir: str
@@ -619,6 +687,17 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
             logger.error('No output from hidef: ' + str(fe) + '\n')
         return None, None
 
+    @staticmethod
+    def _clean_tmp_hierarchy_interactome_files(outdir):
+        for file in [constants.HIERARCHY_NETWORK_PREFIX + constants.CX2_SUFFIX,
+                     constants.HIERARCHY_PARENT_NETWORK_PREFIX + constants.CX2_SUFFIX]:
+            try:
+                file_path = os.path.join(outdir, file)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                logger.warning(f"Tried to remove temp file {file}, but failed due to: {e}")
+
     def get_hierarchy(self, networks, algorithm='leiden', maxres=80, k=10):
         """
         Runs HiDeF to generate hierarchy and registers resulting output
@@ -654,36 +733,33 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                   or None, None if not created
         :rtype: tuple
         """
-        if self._hcxconverter is None:
-            raise CellmapsGenerateHierarchyError('HCX converter must be set')
         outdir = os.path.dirname(networks[0])
 
         (parent_net_path, parent_net, largest_net, edgelist_files) = self._create_edgelist_files_for_networks(networks)
 
-        hier, cdaps_out_file = self.get_hierarchy_from_edgelists(outdir, edgelist_files, largest_net,
-                                                                 algorithm, maxres, k)
+        hierarchy = self.get_hcx_from_edgelists(outdir, edgelist_files, algorithm, maxres, k)
+        print(hierarchy)
         self._clean_tmp_edgelist_files(edgelist_files)
-        self._annotate_hierarchy(network=hier, path=parent_net_path)
-        self._annotate_hierarchy_nodes(network=hier)
-        hierarchy_in_hcx = self._hcxconverter.get_converted_hierarchy(hierarchy=hier,
-                                                                      parent_network=parent_net)
+        self._annotate_hierarchy(network=hierarchy, path=parent_net_path)
+        self._annotate_hierarchy_nodes(network=hierarchy)
+
+        factory = RawCX2NetworkFactory()
+        style_network = factory.get_cx2network(os.path.join(os.path.dirname(cellmaps_generate_hierarchy.__file__),
+                                                            'hierarchy_style.cx2'))
+        hierarchy.set_visual_properties(style_network.get_visual_properties())
+
+        cx_factory = NoStyleCXToCX2NetworkFactory()
+        parent = cx_factory.get_cx2network(parent_net)
+        style_network = factory.get_cx2network(os.path.join(os.path.dirname(cellmaps_generate_hierarchy.__file__),
+                                                            'interactome_style.cx2'))
+        parent.set_visual_properties(style_network.get_visual_properties())
+
+        self._clean_tmp_hierarchy_interactome_files(outdir)
 
         # Register outputs from hierarchy generation
         self._register_hidef_output_files(outdir)
 
-        # register cdaps json file with fairscape
-        data_dict = {'name': os.path.basename(cdaps_out_file) + ' CDAPS output JSON file',
-                     'description': 'CDAPS output JSON file',
-                     'data-format': 'json',
-                     'author': str(self._author),
-                     'version': str(self._version),
-                     'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
-        dataset_id = self._provenance_utils.register_dataset(os.path.dirname(cdaps_out_file),
-                                                             source_file=cdaps_out_file,
-                                                             data_dict=data_dict)
-        self._generated_dataset_ids.append(dataset_id)
-
-        return hierarchy_in_hcx
+        return hierarchy, parent
 
     def _clean_tmp_edgelist_files(self, edgelist_files):
         for file in edgelist_files:

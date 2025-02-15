@@ -13,6 +13,11 @@ class HCXFromCDAPSCXHierarchy(object):
     """
     Converts CDAPS Hierarchy (and parent network/interactome)
     into HCX hierarchy and CX2 respectively.
+
+    .. deprecated:: 0.3.0
+
+        This class is deprecated. It was used to convert hierarchy in CX obtained by running CDAPS into HCX.
+        Now HCX is directly generated from HiDeF files.
     """
 
     VISUAL_EDITOR_PROPERTIES_ASPECT = 'visualEditorProperties'
