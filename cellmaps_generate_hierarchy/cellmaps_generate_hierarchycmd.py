@@ -71,7 +71,7 @@ def _parse_arguments(desc, args):
                         help='Name of project running this tool, needed for '
                              'FAIRSCAPE. If unset, project name specified '
                              'in --coembedding_dir directory or provenance file will be used')
-    parser.add_argument('--k', default=CellmapsGenerateHierarchy.K_DEFAULT, type=float,
+    parser.add_argument('--k', default=CellmapsGenerateHierarchy.K_DEFAULT, type=int,
                         help='HiDeF stability parameter')
     parser.add_argument('--algorithm', default=CellmapsGenerateHierarchy.ALGORITHM,
                         help='HiDeF clustering algorithm parameter')
