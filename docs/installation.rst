@@ -5,8 +5,8 @@ Installation
 ============
 
 
-Stable release
---------------
+Stable release (option 1)
+--------------------------
 
 To install CM4AI Generate Hierarchy, run this command in your terminal:
 
@@ -14,7 +14,7 @@ To install CM4AI Generate Hierarchy, run this command in your terminal:
 
     $ pip install cellmaps_generate_hierarchy
 
-This is the preferred method to install CM4AI Generate Hierarchy, as it will always install the most recent stable release.
+**This is the preferred method to install CM4AI Generate Hierarchy**, as it will always install the most recent stable release.
 
 If you don't have `pip`_ installed, this `Python installation guide`_ can guide
 you through the process.
@@ -22,17 +22,19 @@ you through the process.
 .. _pip: https://pip.pypa.io
 .. _Python installation guide: http://docs.python-guide.org/en/latest/starting/installation/
 
+It is recommended to use conda environment with python 3.8+.
 
-From sources
-------------
+From sources (option 2)
+------------------------
 
-The sources for CM4AI Generate Hierarchy can be downloaded from the `Github repo`_.
+Alternatively, CM4AI Generate Hierarchy can be installed from sources, which is particularly useful for customization
+and development purposes. The sources for CM4AI Generate Hierarchy can be downloaded from the `Github repo`_.
 
 You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/idekerlab/cellmaps_generate_hierarchy
+    $ git clone https://github.com/idekerlab/cellmaps_generate_hierarchy.git
 
 Or download the `tarball`_:
 
