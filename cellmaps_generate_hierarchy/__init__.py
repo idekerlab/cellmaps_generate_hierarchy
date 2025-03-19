@@ -4,7 +4,7 @@
 
 __author__ = 'Cell Maps team'
 __email__ = 'tools@cm4ai.org'
-__version__ = '0.2.3a1'
+__version__ = '0.2.3'
 __repo_url__ = 'https://github.com/idekerlab/cellmaps_generate_hierarchy'
 __description__ = 'A tool to generate hierarchies from protein to protein interaction networks'
 __computation_name__ = 'Hierarchy'
