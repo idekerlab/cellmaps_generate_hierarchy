@@ -2,6 +2,11 @@
 History
 =======
 
+0.2.4 (2025-XX-XX)
+-------------------
+
+* Updated to PEP 517 compliant build system
+
 0.2.3 (2025-03-19)
 ------------------
 

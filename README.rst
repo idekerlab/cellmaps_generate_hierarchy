@@ -41,6 +41,7 @@ Installation
 
    git clone https://github.com/idekerlab/cellmaps_generate_hierarchy
    cd cellmaps_generate_hierarchy
+   pip install -r requirements_dev.txt
    make dist
    pip install dist/cellmaps_generate_hierarchy*whl
 
