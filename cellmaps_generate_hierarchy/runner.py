@@ -64,21 +64,52 @@ class CellmapsGenerateHierarchy(object):
         :type ppigen: :py:class:`~cellmaps_generate_hierarchy.ppi.PPINetworkGenerator`
         :param hiergen: Hierarchy Generator object, should be a subclass
         :type hiergen: :py:class:`~cellmaps_generate_hierarchy.HierarchyGenerator`
-        :param name:
-        :param organization_name:
-        :param project_name:
+        :param algorithm: Clustering algorithm for hierarchy detection (default: 'leiden')
+        :type algorithm: str
+        :param maxres: Maximum resolution to explore when clustering (default: 80)
+        :type maxres: int
+        :param k: Number of neighbors for graph construction (default: 10)
+        :type k: int
+        :param gene_node_attributes: TSV file(s) or directory containing additional gene attributes to annotate network nodes
+        :type gene_node_attributes: list[str]
+        :param hiergen: Hierarchy generator object that clusters and converts networks to hierarchical structure
+        :type hiergen: :py:class:`~cellmaps_generate_hierarchy.HierarchyGenerator`
+        :param name: Optional dataset name used in metadata and registration
+        :type name: str
+        :param organization_name: Name of the organization creating this dataset
+        :type organization_name: str
+        :param project_name: Name of the project associated with this analysis
+        :type project_name: str
+        :param layoutalgo: Optional layout algorithm to apply to hierarchy (currently unused due to CX2 format limitations)
+        :type layoutalgo: :py:class:`~cellmaps_utils.layout.BaseLayout` or None
         :param skip_logging: If ``True`` skip logging, if ``None`` or ``False`` do NOT skip logging
         :type skip_logging: bool
-        :param provenance_utils:
-        :param ndexserver:
-        :type ndexserver: str
-        :param ndexuser:
-        :type ndexuser: str
-        :param ndexpassword:
-        :type ndexpassword: str
+        :param provenance_utils: Utility class for registering datasets, RO-Crates, and software in FAIRSCAPE
+        :type provenance_utils: :py:class:`~cellmaps_utils.provenance.ProvenanceUtil`
+        :param input_data_dict: Dictionary capturing run parameters for reproducibility and logging
+        :type input_data_dict: dict or None
+        :param ndexserver: NDEx server address for uploading hierarchy and networks
+        :type ndexserver: str or None
+        :param ndexuser: NDEx username for authentication
+        :type ndexuser: str or None
+        :param ndexpassword: NDEx password for authentication
+        :type ndexpassword: str or None
         :param visibility: If set to ``public``, ``PUBLIC`` or ``True`` sets hierarchy and interactome to
                            publicly visibility on NDEx, otherwise they are left as private
         :type visibility: str or bool
+        :param keep_intermediate_files: If True, keeps PPI network files for review and registers them; otherwise deletes them
+        :type keep_intermediate_files: bool
+        :param provenance: Optional provenance metadata to use when no RO-Crate is available
+                           Example:
+
+                           .. code-block:: python
+
+                                {
+                                    'name': 'Example input dataset',
+                                    'organization-name': 'CM4AI',
+                                    'project-name': 'Example'
+                                }
+        :type provenance: dict or None
         """
         logger.debug('In constructor')
         if outdir is None:
