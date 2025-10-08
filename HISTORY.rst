@@ -2,6 +2,11 @@
 History
 =======
 
+0.2.5 (2025-10-08)
+-------------------
+
+* Remove leading spaces from name of hierarchy.
+
 0.2.4 (2025-05-15)
 -------------------
 
