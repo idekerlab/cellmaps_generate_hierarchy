@@ -540,10 +540,11 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                 keyword_subset = []
             else:
                 keyword_subset = prov_utils.get_keywords()[:6]
-            network.set_name(prov_utils.get_name() + ' - ' + ' '.join(keyword_subset) + ' hierarchy')
+            network_name = (prov_utils.get_name() + ' - ' + ' '.join(keyword_subset) + ' hierarchy').lstrip()
+            network.set_name(network_name)
         else:
             network.set_network_attribute(name='description', values=description)
-            network.set_name(description)
+            network.set_name(description.lstrip())
 
     def _annotate_hierarchy_nodes(self, network):
         """
