@@ -87,7 +87,8 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                  hierarchy_parent_cutoff=HIERARCHY_PARENT_CUTOFF,
                  author='cellmaps_generate_hierarchy',
                  version=cellmaps_generate_hierarchy.__version__,
-                 bootstrap_edges=BOOTSTRAP_EDGES):
+                 bootstrap_edges=BOOTSTRAP_EDGES,
+                 weighted_mode=False):
         """
 
         :param hidef_cmd: HiDeF command line binary
@@ -96,6 +97,8 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         :param author:
         :type author: str
         :param version:
+        :param weighted_mode: If True, generates weighted edge lists with 3 columns
+        :type weighted_mode: bool
         """
         super().__init__(provenance_utils=provenance_utils,
                          author=author,
@@ -109,6 +112,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         else:
             self._hidef_cmd = hidef_cmd
         self._bootstrap_edges = bootstrap_edges
+        self._weighted_mode = weighted_mode
 
     def _get_max_node_id(self, nodes_file):
         """
@@ -441,26 +445,50 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
 
             remaining_edges = list()
             removed_edges = list()
-            for _, edge_obj in net.get_edges():
+            for edge_id, edge_obj in net.get_edges():
                 edge = (edge_obj['s'], edge_obj['t'])
+                weight = None
+                
+                # If in weighted mode, extract the edge weight
+                if self._weighted_mode:
+                    weight_attr = net.get_edge_attribute(edge_id, constants.WEIGHTED_PPI_EDGELIST_WEIGHT_COL)
+                    if weight_attr:
+                        weight = weight_attr.get('v')
+                
                 if len(removed_edges) >= int(len(net.get_edges()) * (self._bootstrap_edges / 100)):
-                    remaining_edges.append(edge)
+                    remaining_edges.append((edge[0], edge[1], weight))
                 elif edge not in all_removed_edges:
-                    remaining_edges.append(edge)
+                    remaining_edges.append((edge[0], edge[1], weight))
                 else:
-                    removed_edges.append(edge)
+                    removed_edges.append((edge[0], edge[1], weight))
 
             with open(dest_path, 'w') as f:
-                for s, t in remaining_edges:
-                    f.write(str(largest_name_to_id[id_to_name[s]]) + '\t' +
-                            str(largest_name_to_id[id_to_name[t]]) + '\n')
+                for edge_data in remaining_edges:
+                    s, t = edge_data[0], edge_data[1]
+                    line = str(largest_name_to_id[id_to_name[s]]) + '\t' + \
+                           str(largest_name_to_id[id_to_name[t]])
+                    
+                    # Add weight as third column if in weighted mode and weight exists
+                    if self._weighted_mode and edge_data[2] is not None:
+                        line += '\t' + str(edge_data[2])
+                    
+                    line += '\n'
+                    f.write(line)
 
             if len(removed_edges) > 0:
                 removed_edges_path = n + '_removed_edges.tsv'
                 with open(removed_edges_path, 'w') as f:
-                    for s, t in removed_edges:
-                        f.write(str(largest_name_to_id[id_to_name[s]]) + '\t' +
-                                str(largest_name_to_id[id_to_name[t]]) + '\n')
+                    for edge_data in removed_edges:
+                        s, t = edge_data[0], edge_data[1]
+                        line = str(largest_name_to_id[id_to_name[s]]) + '\t' + \
+                               str(largest_name_to_id[id_to_name[t]])
+                        
+                        # Add weight as third column if in weighted mode and weight exists
+                        if self._weighted_mode and edge_data[2] is not None:
+                            line += '\t' + str(edge_data[2])
+                        
+                        line += '\n'
+                        f.write(line)
 
             if len(remaining_edges) == 0:
                 raise CellmapsGenerateHierarchyError(f"PPI network {n} has no edges. Cannot create hierarchy.")

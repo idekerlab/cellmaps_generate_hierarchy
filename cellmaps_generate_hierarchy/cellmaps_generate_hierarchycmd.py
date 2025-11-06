@@ -92,6 +92,12 @@ def _parse_arguments(desc, args):
                              'a value of 0.1 means to generate PPI input network using the '
                              'top ten percent of coembedding entries. Each cutoff generates '
                              'another PPI network')
+    parser.add_argument('--weighted_edgelist', action='store_true',
+                        help='If set, generates a single weighted edge list with cosine '
+                             'similarity values instead of multiple cutoff-based edge lists. '
+                             'The edge list will include a third column with weight values. ' \
+                             'The cutoff used will be the first in the list or if not provided, ' \
+                             'the hierarchy parent cutoff will be used.')
     parser.add_argument('--hierarchy_parent_cutoff',
                         default=CDAPSHiDeFHierarchyGenerator.HIERARCHY_PARENT_CUTOFF, type=float,
                         help='PPI network cutoff to be chosen as hierarchy parent network.')
@@ -210,8 +216,15 @@ def main(args):
             raise CellmapsGenerateHierarchyError('In run mode, coembedding_dirs parameter is required.')
 
         provenance = ProvenanceUtil()
+        
+        # If weighted_edgelist is set, use only the first cutoff (or default to CDAPSHiDeFHierarchyGenerator.HIERARCHY_PARENT_CUTOFF)
+        if theargs.weighted_edgelist:
+            cutoffs = [theargs.ppi_cutoffs[0]] if theargs.ppi_cutoffs else [CDAPSHiDeFHierarchyGenerator.HIERARCHY_PARENT_CUTOFF]
+        else:
+            cutoffs = theargs.ppi_cutoffs
+        
         ppigen = CosineSimilarityPPIGenerator(embeddingdirs=theargs.coembedding_dirs,
-                                              cutoffs=theargs.ppi_cutoffs)
+                                              cutoffs=cutoffs)
 
         refiner = HiDeFHierarchyRefiner(ci_thre=theargs.containment_threshold,
                                         ji_thre=theargs.jaccard_threshold,
@@ -227,7 +240,8 @@ def main(args):
                                                hierarchy_parent_cutoff=float(theargs.hierarchy_parent_cutoff),
                                                version=cellmaps_generate_hierarchy.__version__,
                                                provenance_utils=provenance,
-                                               bootstrap_edges=theargs.bootstrap_edges)
+                                               bootstrap_edges=theargs.bootstrap_edges,
+                                               weighted_mode=theargs.weighted_edgelist)
         if theargs.skip_layout is True:
             layoutalgo = None
         else:
