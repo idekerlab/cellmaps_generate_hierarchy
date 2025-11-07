@@ -84,6 +84,9 @@ In `convert` mode (converting hierarchy to HiDeF files)
 
 *Optional*
 
+- ``--provenance PROVENANCE``
+    Path to JSON provenance describing the input files. Required when a provided directory is missing ``ro-crate-metadata.json``.
+    
 - ``--ndexserver NDEXSERVER``
     Server where the hierarchy can be converted to HCX and saved. Default is ``idekerlab.ndexbio.org``.
 
@@ -120,11 +123,29 @@ In `convert` mode (converting hierarchy to HiDeF files)
 - ``--ppi_cutoffs PPI_CUTOFFS [PPI_CUTOFFS ...]``
     Cutoffs used to generate PPI input networks. Default cutoffs are provided in the code.
 
+- ``--hierarchy_parent_cutoff HIERARCHY_PARENT_CUTOFF``
+    PPI cutoff used to select the parent network that seeds hierarchy creation.
+
+- ``--weighted_edgelist``
+    If set, only the first ``--ppi_cutoffs`` value (or the hierarchy parent cutoff) is used and a single cosine-similarity weighted edgelist.tsv file is produced instead of per-cutoff edge lists.
+
+- ``--bootstrap_edges BOOTSTRAP_EDGES``
+    Percentage (0-99) of edges randomly removed from each PPI network to perform bootstrap sampling before hierarchy generation.
+
 - ``--skip_layout``
     If set, skips the layout of hierarchy step.
 
 - ``--visibility``
     If set, the Hierarchy and interactome network loaded onto NDEx will be publicly visible.
+
+- ``--keep_intermediate_files``
+    If set, intermediate CX/CX2 PPI files are kept on disk.
+
+- ``--gene_node_attributes PATH [PATH ...]``
+    Additional RO-Crates or TSVs providing per-gene attributes to merge into the hierarchy.
+
+- ``--skip_logging``
+    If set, ``output.log`` and ``error.log`` files will not be created in the run directory.
 
 - ``--logconf LOGCONF``
     Path to python logging configuration file. Setting this overrides ``-v`` parameter which uses the default logger.
