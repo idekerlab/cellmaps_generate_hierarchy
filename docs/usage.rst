@@ -227,6 +227,8 @@ Programmatically:
 Convert hierarchy to HiDeF
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+To convert hierarchy to HiDeF .nodes and .edges files, use the following command:
+
 .. code-block::
 
     cellmaps_generate_hierarchycmd.py ./output_dir --mode convert --hcx_dir ./examples/
