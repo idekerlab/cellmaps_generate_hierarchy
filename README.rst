@@ -13,6 +13,11 @@ The Cell Maps Generate Hierarchy is part of the Cell Mapping Toolkit
         :target: https://cellmaps-generate-hierarchy.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.17298670.svg
+        :target: https://zenodo.org/doi/10.5281/zenodo.17298670
+        :alt: Zenodo DOI badge
+
+
 Generates hierarchy from `Cell Maps Coembedding <https://cellmaps-coembedding.readthedocs.io/>`__ using `HiDeF <https://github.com/fanzheng10/HiDeF/>`__
 
 * Free software: MIT license
