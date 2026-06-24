@@ -1,15 +1,20 @@
-# Use an official Python runtime as a parent image
-FROM continuumio/miniconda3
-
-RUN apt-get --allow-releaseinfo-change update
-RUN apt-get install -y build-essential 
-
-RUN mkdir /tmp/cellmaps_generate_hierarchy
-COPY ./ /tmp/cellmaps_generate_hierarchy/
-RUN pip install /tmp/cellmaps_generate_hierarchy
-
-RUN rm -rf /tmp/cellmaps_generate_hierarchy
-
-ENTRYPOINT ["/opt/conda/bin/cellmaps_generate_hierarchycmd.py"]
-
+# ---- build stage ----
+FROM python:3.9-slim AS build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    git \
+  && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+COPY . /src
+# build wheels for your package + deps
+RUN pip install --no-cache-dir --upgrade pip wheel \
+ && pip wheel --no-cache-dir --wheel-dir /wheels .
+# ---- runtime stage ----
+FROM python:3.9-slim
+COPY --from=build /wheels /wheels
+RUN pip install --no-cache-dir /wheels/* \
+ && rm -rf /wheels
+# the package exposes a CLI users run as `cellmaps_generate_hierarchycmd.py -h`
+ENTRYPOINT ["cellmaps_generate_hierarchycmd.py"]
 CMD ["--help"]
