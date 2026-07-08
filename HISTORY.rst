@@ -2,13 +2,15 @@
 History
 =======
 
-0.2.6 (TBD)
+0.3.0a1
 -----------
 
-* Added ``--weighted_edgelist`` flag to enable generation of a single weighted edge list with cosine similarity 
-  values as a third column, instead of multiple cutoff-based edge lists. When this flag is set, only the first 
-  cutoff value from ``--ppi_cutoffs`` is used (defaults to parent cutoff if not specified), and the resulting edge list 
+* Added ``--weighted_edgelist`` flag to enable generation of a single weighted edge list with cosine similarity
+  values as a third column, instead of multiple cutoff-based edge lists. When this flag is set, only the first
+  cutoff value from ``--ppi_cutoffs`` is used (defaults to parent cutoff if not specified), and the resulting edge list
   includes edge weights that can be utilized by HiDeF for hierarchy generation.
+
+  * Added test suite for verifying weighted edgelist behavior.
 
 0.2.5 (2025-10-08)
 -------------------
