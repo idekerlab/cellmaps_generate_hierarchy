@@ -33,6 +33,7 @@ Overview of Cell Maps Generate Hierarchy
 
    installation
    usage
+   extendedusagetutorial
    inputs
    outputs
    modules
