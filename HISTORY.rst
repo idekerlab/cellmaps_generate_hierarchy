@@ -2,7 +2,7 @@
 History
 =======
 
-0.3.0a1
+0.3.0
 -----------
 
 * Added ``--weighted_edgelist`` flag to enable generation of a single weighted edge list with cosine similarity
