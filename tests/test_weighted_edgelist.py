@@ -121,29 +121,38 @@ class TestWeightedEdgelist(unittest.TestCase):
         self.assertTrue(os.path.isfile(removed_path))
         with open(removed_path) as f:
             removed = f.read()
-        # the removed edge line should have 3 tab-separated fields
-        self.assertEqual(1, len(removed.strip().splitlines()))
-        self.assertEqual(3, len(removed.strip().split('\t')))
-        self.assertIn('0.9', removed)
+        # deterministic: only the (0, 1) edge was removed, weight 0.9
+        self.assertEqual('0\t1\t0.9\n', removed)
+        # and the surviving edge still lands in the main edgelist, weighted
+        self.assertEqual('1\t2\t0.5\n', self._read_edgelist(prefix))
 
     def test_weighted_mode_missing_weight_falls_back_to_two_columns(self):
         """weighted_mode=True but an edge has no Weight attribute.
 
-        The writer already guards each line with ``edge_data[2] is not None``,
-        so the documented intent is a graceful fall back to a 2-column line for
-        that edge. This test pins that intent.
-
-        NOTE: this currently FAILS on the dev branch. ``get_edge_attribute``
-        returns the tuple ``(None, None)`` (not ``None``) for a missing
-        attribute, which is truthy, so ``if weight_attr:`` passes and
-        ``weight_attr.get('v')`` raises AttributeError. Fix in hierarchy.py,
-        e.g. ``if isinstance(weight_attr, dict):`` before calling .get('v').
+        The writer guards each line with ``edge_data[2] is not None``, so an
+        edge without a weight must fall back to a plain 2-column line rather
+        than crashing. Regression guard for the ``get_edge_attribute`` returning
+        the truthy tuple ``(None, None)`` bug.
         """
         prefix = self._write_network('wnet',
                                      [('n1', 'n2', 0.9), ('n2', 'n5', None)])
         gen = self._make_generator(weighted_mode=True)
         gen._create_edgelist_files_for_networks([prefix])
         self.assertEqual('0\t1\t0.9\n1\t2\n', self._read_edgelist(prefix))
+
+    def test_weighted_mode_across_multiple_networks(self):
+        """Weights are written correctly for every network in the list,
+        including the largest (reused in place) and the smaller ones
+        (reloaded from disk). Node ids in every edgelist are remapped through
+        the largest network's name->id table."""
+        small = self._write_network('small', [('n1', 'n2', 0.9)])
+        # 'large' has an extra node + edge so it is the largest by file size
+        large = self._write_network('large',
+                                    [('n1', 'n2', 0.3), ('n2', 'n5', 0.7)])
+        gen = self._make_generator(weighted_mode=True)
+        gen._create_edgelist_files_for_networks([small, large])
+        self.assertEqual('0\t1\t0.9\n', self._read_edgelist(small))
+        self.assertEqual('0\t1\t0.3\n1\t2\t0.7\n', self._read_edgelist(large))
 
 
 class TestWeightedEdgelistCmd(unittest.TestCase):

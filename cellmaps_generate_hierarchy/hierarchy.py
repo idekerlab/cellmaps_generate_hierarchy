@@ -448,13 +448,13 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
             for edge_id, edge_obj in net.get_edges():
                 edge = (edge_obj['s'], edge_obj['t'])
                 weight = None
-                
+
                 # If in weighted mode, extract the edge weight
                 if self._weighted_mode:
                     weight_attr = net.get_edge_attribute(edge_id, constants.WEIGHTED_PPI_EDGELIST_WEIGHT_COL)
-                    if weight_attr:
+                    if isinstance(weight_attr, dict):
                         weight = weight_attr.get('v')
-                
+
                 if len(removed_edges) >= int(len(net.get_edges()) * (self._bootstrap_edges / 100)):
                     remaining_edges.append((edge[0], edge[1], weight))
                 elif edge not in all_removed_edges:
@@ -467,11 +467,11 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                     s, t = edge_data[0], edge_data[1]
                     line = str(largest_name_to_id[id_to_name[s]]) + '\t' + \
                            str(largest_name_to_id[id_to_name[t]])
-                    
+
                     # Add weight as third column if in weighted mode and weight exists
                     if self._weighted_mode and edge_data[2] is not None:
                         line += '\t' + str(edge_data[2])
-                    
+
                     line += '\n'
                     f.write(line)
 
@@ -482,11 +482,11 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                         s, t = edge_data[0], edge_data[1]
                         line = str(largest_name_to_id[id_to_name[s]]) + '\t' + \
                                str(largest_name_to_id[id_to_name[t]])
-                        
+
                         # Add weight as third column if in weighted mode and weight exists
                         if self._weighted_mode and edge_data[2] is not None:
                             line += '\t' + str(edge_data[2])
-                        
+
                         line += '\n'
                         f.write(line)
 
