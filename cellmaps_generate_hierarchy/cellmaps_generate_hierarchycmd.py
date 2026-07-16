@@ -77,6 +77,8 @@ def _parse_arguments(desc, args):
                         help='HiDeF clustering algorithm parameter')
     parser.add_argument('--maxres', default=CellmapsGenerateHierarchy.MAXRES, type=float,
                         help='HiDeF max resolution parameter')
+    parser.add_argument('--numthreads', default=CellmapsGenerateHierarchy.NUMTHREADS, type=int,
+                        help='HiDeF numthreads parameter')
     parser.add_argument('--containment_threshold', default=HiDeFHierarchyRefiner.CONTAINMENT_THRESHOLD, type=float,
                         help='Containment index threshold for pruning hierarchy')
     parser.add_argument('--jaccard_threshold', default=HiDeFHierarchyRefiner.JACCARD_THRESHOLD, type=float,
@@ -258,6 +260,7 @@ def main(args):
                                          algorithm=theargs.algorithm,
                                          maxres=theargs.maxres,
                                          k=theargs.k,
+                                         numthreads=theargs.numthreads,
                                          gene_node_attributes=theargs.gene_node_attributes,
                                          hiergen=hiergen,
                                          name=theargs.name,
