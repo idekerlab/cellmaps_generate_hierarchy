@@ -106,7 +106,7 @@ def _parse_arguments(desc, args):
                         help='Percentage of edges that will be removed randomly for bootstrapping, up to 99.')
     parser.add_argument('--skip_layout', action='store_true',
                         help='If set, skips layout of hierarchy step')
-    parser.add_argument('--ndexserver', default='ndexbio.org',
+    parser.add_argument('--ndexserver', default='https://www.ndexbio.org',
                         help='Server where hierarchy can be converted to HCX and saved')
     parser.add_argument('--ndexuser',
                         help='NDEx user account')
