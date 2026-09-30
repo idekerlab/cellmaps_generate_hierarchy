@@ -9,6 +9,15 @@ Cell Maps Generate Hierarchy
 .. image:: https://app.travis-ci.com/idekerlab/cellmaps_generate_hierarchy.svg?branch=main
         :target: https://app.travis-ci.com/idekerlab/cellmaps_generate_hierarchy
 
+.. image:: https://readthedocs.org/projects/cellmaps-generate-hierarchy/badge/?version=latest
+        :target: https://cellmaps-generate-hierarchy.readthedocs.io/en/latest/?badge=latest
+        :alt: Documentation Status
+
+
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.17298670.svg
+        :target: https://zenodo.org/doi/10.5281/zenodo.17298670
+        :alt: Zenodo DOI badge
+
 The Cell Maps Generate Hierarchy Tool generates hierarchy from `Cell Maps Coembedding <https://cellmaps-coembedding.readthedocs.io/>`__ using `HiDeF <https://github.com/fanzheng10/HiDeF/>`__.
 It accepts one or more coembedding directories corresponding to multiple folds of the same data.
 
