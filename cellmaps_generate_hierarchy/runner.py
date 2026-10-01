@@ -32,6 +32,7 @@ class CellmapsGenerateHierarchy(object):
     K_DEFAULT = 10
     ALGORITHM = 'leiden'
     MAXRES = 80
+    NUMTHREADS = 8
 
     def __init__(self, outdir=None,
                  inputdirs=[],
@@ -39,6 +40,7 @@ class CellmapsGenerateHierarchy(object):
                  algorithm=ALGORITHM,
                  maxres=MAXRES,
                  k=K_DEFAULT,
+                 numthreads=NUMTHREADS,
                  gene_node_attributes=None,
                  hiergen=None,
                  name=None,
@@ -70,6 +72,8 @@ class CellmapsGenerateHierarchy(object):
         :type maxres: int
         :param k: Number of neighbors for graph construction (default: 10)
         :type k: int
+        :param numthreads: The number of threads to run HiDeF (default is 8).
+        :type numthreads: int
         :param gene_node_attributes: TSV file(s) or directory containing additional gene attributes to annotate network nodes
         :type gene_node_attributes: list[str]
         :param hiergen: Hierarchy generator object that clusters and converts networks to hierarchical structure
@@ -121,6 +125,7 @@ class CellmapsGenerateHierarchy(object):
         self._algorithm = algorithm
         self._maxres = maxres
         self._k = k
+        self._numthreads = numthreads
         self._gene_node_attributes = gene_node_attributes
         self._hiergen = hiergen
         self._name = name
@@ -149,6 +154,7 @@ class CellmapsGenerateHierarchy(object):
                                      'algorithm': self._algorithm,
                                      'maxres': self._maxres,
                                      'k': self._k,
+                                     'numthreads': self._numthreads,
                                      'gene_node_attributes': str(self._gene_node_attributes),
                                      'hiergen': str(self._hiergen),
                                      'ndexserver': self._server,
@@ -622,7 +628,7 @@ class CellmapsGenerateHierarchy(object):
 
             # generate hierarchy and get parent ppi
             hierarchy, parent_ppi = self._hiergen.get_hierarchy(ppi_network_prefix_paths, self._algorithm, self._maxres,
-                                                                self._k)
+                                                                self._k, self._numthreads)
 
             if not self.keep_intermediate_files:
                 self._remove_ppi_networks(ppi_network_prefix_paths)

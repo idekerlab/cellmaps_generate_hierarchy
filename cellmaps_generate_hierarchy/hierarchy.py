@@ -43,7 +43,7 @@ class HierarchyGenerator(object):
         """
         return self._generated_dataset_ids
 
-    def get_hierarchy(self, networks, algorithm='leiden', maxres=80, k=10):
+    def get_hierarchy(self, networks, algorithm='leiden', maxres=80, k=10, numthreads=8):
         """
         Gets hierarchy
 
@@ -590,11 +590,11 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
                                        values='true', type='boolean',
                                        overwrite=True)
 
-    def _run_hidef(self, edgelist_files, outputprefix, algorithm, maxres, k):
+    def _run_hidef(self, edgelist_files, outputprefix, algorithm, maxres, k, numthreads):
         cmd = [self._python, self._hidef_cmd, '--g']
         cmd.extend(edgelist_files)
         cmd.extend(['--o', outputprefix,
-                    '--alg', algorithm, '--maxres', str(maxres), '--k', str(k),
+                    '--alg', algorithm, '--maxres', str(maxres), '--k', str(k), '--numthreads', str(numthreads),
                     '--skipgml'])
 
         exit_code, out, err = self._run_cmd(cmd)
@@ -605,7 +605,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
             raise CellmapsGenerateHierarchyError('Cmd failed with exit code: ' + str(exit_code) +
                                                  ' : ' + str(out) + ' : ' + str(err))
 
-    def get_hierarchy_from_edgelists(self, outdir, edgelist_files, parent_net, algorithm='leiden', maxres=80, k=10):
+    def get_hierarchy_from_edgelists(self, outdir, edgelist_files, parent_net, algorithm='leiden', maxres=80, k=10, numthreads=8):
         """
         Generates a hierarchy from edgelist files using HiDeF.
 
@@ -625,12 +625,14 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         :type maxres: int
         :param k: The k parameter for HiDeF (default is 10).
         :type k: int
+        :param numthreads: The number of threads to run HiDeF (default is 8).
+        :type numthreads: int
         :return: A tuple containing the resulting hierarchy and the path to the CDAPS output JSON file, or (None, None) if an error occurs.
         :rtype: tuple (hierarchy, str) or (None, None)
         :raises FileNotFoundError: If no output is generated from HiDeF.
         """
         outputprefix = os.path.join(outdir, CDAPSHiDeFHierarchyGenerator.HIDEF_OUT_PREFIX)
-        self._run_hidef(edgelist_files, outputprefix, algorithm, maxres, k)
+        self._run_hidef(edgelist_files, outputprefix, algorithm, maxres, k, numthreads)
 
         try:
             if self._refiner is not None:
@@ -648,7 +650,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
             logger.error('No output from hidef: ' + str(fe) + '\n')
         return None, None
 
-    def get_hierarchy(self, networks, algorithm='leiden', maxres=80, k=10):
+    def get_hierarchy(self, networks, algorithm='leiden', maxres=80, k=10, numthreads=8):
         """
         Runs HiDeF to generate hierarchy and registers resulting output
         files with FAIRSCAPE. To do this the method generates edgelist
@@ -675,6 +677,8 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         :type maxres: int
         :param k: The k parameter for HiDeF (default is 10).
         :type k: int
+        :param numthreads: The number of threads to run HiDeF (default is 8).
+        :type numthreads: int
         :raises CellmapsGenerateHierarchyError: If there was an error
         :return: Resulting hierarchy or ``None`` if no hierarchy from HiDeF
         :return: (hierarchy as list,
@@ -690,7 +694,7 @@ class CDAPSHiDeFHierarchyGenerator(HierarchyGenerator):
         (parent_net_path, parent_net, largest_net, edgelist_files) = self._create_edgelist_files_for_networks(networks)
 
         hier, cdaps_out_file = self.get_hierarchy_from_edgelists(outdir, edgelist_files, largest_net,
-                                                                 algorithm, maxres, k)
+                                                                 algorithm, maxres, k, numthreads)
         self._clean_tmp_edgelist_files(edgelist_files)
         self._annotate_hierarchy(network=hier, path=parent_net_path)
         self._annotate_hierarchy_nodes(network=hier)
